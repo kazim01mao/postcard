@@ -362,7 +362,7 @@ export default function App() {
 
     // 更新替身動態座標與縮放、傾斜與偏轉
     setAvatarState({
-      x: -rawDx,  // 鏡像翻轉，使用戶在鏡頭前向左移時，畫面替身也是向左移
+      x: rawDx,  // 修正為同向移動，配合 mapVideoToContainer 已處理的鏡像
       y: rawDy,
       scale: sizeRatioW,
       detected: true,
