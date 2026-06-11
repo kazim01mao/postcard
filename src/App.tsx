@@ -37,6 +37,9 @@ export default function App() {
     setHasInitialError(false);
     setHasResultError(false);
     setHasFinalError(false);
+    if (config.title) {
+      document.title = config.title;
+    }
   }, [config]);
 
   // 靜態資源預載入：防止在階段 2、3、4 切換時，因圖片加載延遲產生黑屏、跳動或白屏
