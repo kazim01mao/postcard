@@ -1,0 +1,6 @@
+{
+  "name": "魔法變裝相機",
+  "description": "基於 MediaPipe Face Mesh 人臉對準定位的魔法變裝互動相機",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

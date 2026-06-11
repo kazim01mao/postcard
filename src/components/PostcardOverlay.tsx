@@ -1,0 +1,261 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import { AlignmentConfig } from '../types';
+
+interface PostcardOverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+  config: AlignmentConfig;
+}
+
+export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClose, config }) => {
+  const [generatedImgSrc, setGeneratedImgSrc] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setGeneratedImgSrc(null);
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+
+    // 🏆 動態取得客製化配置
+    const photoUrl = config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
+    const textMsg = config.postcardText || config.successMessage || '送上一份誠摯的驚喜，祝你魔法般的一天！';
+    const titleText = config.title || '魔法變裝紀念';
+
+    // 創建影像載入
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // 避免 Cross-Origin 問題
+    img.src = photoUrl;
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        // 設計一個極具黃金比例的明信片尺寸 (800 x 1100 像素)
+        canvas.width = 800;
+        canvas.height = 1100;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('無法初始化 2D Canvas');
+        }
+
+        // ===============================================
+        // 🎨 步驟 1：繪製手工紙米白質感與魔法微光
+        // ===============================================
+        ctx.fillStyle = '#FAF7F0'; // 精緻手工紙米白
+        ctx.fillRect(0, 0, 800, 1100);
+
+        // 溫潤陰影漸層，營造微拱手工質感
+        const borderGrad = ctx.createRadialGradient(400, 550, 100, 400, 550, 800);
+        borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+        borderGrad.addColorStop(0.7, 'rgba(235, 225, 205, 0.15)');
+        borderGrad.addColorStop(1, 'rgba(215, 201, 178, 0.38)');
+        ctx.fillStyle = borderGrad;
+        ctx.fillRect(0, 0, 800, 1100);
+
+        // ===============================================
+        // 🖼️ 步驟 2：渲染照片 (居中裁切適配，完美保留，營造油墨印刷感)
+        // ===============================================
+        // 照片區域設計：上邊距 120px，寬 640px，高 480px (4:3 比例)
+        const px = 80;
+        const py = 120;
+        const pw = 640;
+        const ph = 480;
+        const r = 24; // 圓半徑
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(px, py, pw, ph, r);
+        ctx.clip();
+
+        // 繪製照片 (Cover 模式)
+        const iw = img.width;
+        const ih = img.height;
+        const photoRatio = pw / ph;
+        const imgRatio = iw / ih;
+        
+        let sx = 0, sy = 0, sWidth = iw, sHeight = ih;
+        if (imgRatio > photoRatio) {
+          sWidth = ih * photoRatio;
+          sx = (iw - sWidth) / 2;
+        } else {
+          sHeight = iw / photoRatio;
+          sy = (ih - sHeight) / 2;
+        }
+
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, px, py, pw, ph);
+        ctx.restore();
+
+        // 模擬紙面油墨微融合，繪製極細緻的紙纖維感外框
+        ctx.strokeStyle = 'rgba(197, 177, 142, 0.25)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(px, py, pw, ph, r);
+        ctx.stroke();
+
+        // ===============================================
+        // ✍️ 步驟 3：金箔質感印刷排版
+        // ===============================================
+        ctx.textAlign = 'center';
+        
+        // 金箔漸長裝飾線
+        const lineGrad = ctx.createLinearGradient(150, 0, 650, 0);
+        lineGrad.addColorStop(0, 'rgba(177, 131, 33, 0)');
+        lineGrad.addColorStop(0.3, 'rgba(177, 131, 33, 0.45)');
+        lineGrad.addColorStop(0.5, '#ebd080');
+        lineGrad.addColorStop(0.7, 'rgba(177, 131, 33, 0.45)');
+        lineGrad.addColorStop(1, 'rgba(177, 131, 33, 0)');
+
+        ctx.strokeStyle = lineGrad;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(150, 685);
+        ctx.lineTo(650, 685);
+        ctx.stroke();
+
+        // 金星印記
+        const goldGrad = ctx.createLinearGradient(0, 670, 0, 770);
+        goldGrad.addColorStop(0, '#be8f2a');
+        goldGrad.addColorStop(0.5, '#fdf7c3');
+        goldGrad.addColorStop(1, '#9e721d');
+
+        ctx.fillStyle = goldGrad;
+        ctx.font = '22px serif';
+        ctx.fillText('✦', 400, 692);
+
+        // 溫暖金箔字句印刷
+        const textGrad = ctx.createLinearGradient(0, 810, 0, 980);
+        textGrad.addColorStop(0, '#9e7520');
+        textGrad.addColorStop(1, '#614914');
+        
+        ctx.fillStyle = textGrad;
+        ctx.font = 'bold 24px "Inter", "Microsoft JhengHei", sans-serif';
+        ctx.letterSpacing = '4px';
+
+        const lines: string[] = [];
+        const limit = 22; // 每行大約字數
+        for (let i = 0; i < textMsg.length; i += limit) {
+          lines.push(textMsg.substring(i, i + limit));
+        }
+
+        lines.forEach((line, index) => {
+          ctx.fillText(line, 400, 815 + index * 48);
+        });
+
+        // 轉換為 JPEG 資料，壓縮率為 93% 保持超高品質又能快速儲存
+        const url = canvas.toDataURL('image/jpeg', 0.93);
+        setGeneratedImgSrc(url);
+        setIsGenerating(false);
+      } catch (err: any) {
+        console.error('明信片渲染出錯:', err);
+        setError('明信片加載失敗，請重試！可能由於自定義照片尚未成功上傳');
+        setIsGenerating(false);
+      }
+    };
+
+    img.onerror = () => {
+      // 倘若自定義照片上傳出錯或不見了，嘗試回退到預設高畫質雲端圖，保證 100% 成功填充
+      if (photoUrl !== 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=800&h=1200') {
+        img.src = 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=800&h=1200';
+      } else {
+        setError('明信片背景圖加載失敗，請連線網路再試。');
+        setIsGenerating(false);
+      }
+    };
+
+  }, [isOpen, config]);
+
+  // 單獨的點擊下載下載處理函式 (給桌面/支援下載的行動端)
+  const handleDownload = () => {
+    if (!generatedImgSrc) return;
+    const link = document.createElement('a');
+    link.href = generatedImgSrc;
+    // 取名叫 friend 專屬明信片，或通用明信片
+    link.download = `postcard_${config.title || 'friend'}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!isOpen) return null;
+
+  const photoUrl = config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
+
+  return (
+    <div className="absolute inset-0 z-[100] bg-black/55 backdrop-blur-md flex items-center justify-center p-3.5 pointer-events-auto select-none animate-[fadeIn_0.3s_ease-out]">
+      
+      {/* 🔮 珍貴的圓角紙質明信片 (無彈窗外加框架，它自身就是明信片) */}
+      <div className="w-[330px] h-[500px] bg-[#FAF7F0] rounded-[24px] border border-[#e3dac9] shadow-[0_24px_55px_rgba(50,45,35,0.28)] flex flex-col justify-between relative overflow-hidden animate-scaleUp">
+        
+        {/* 右上角精緻、壓印風格的圓形返回按鈕 */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-[60] w-8 h-8 rounded-full bg-[#fbfbfa] hover:bg-[#f5f2eb] text-[#85704a] border border-[#dfd4be] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.06),_0_2px_5px_rgba(0,0,0,0.05)] hover:shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.08),_0_1px_3px_rgba(0,0,0,0.03)] flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer"
+          title="返回"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+        </button>
+
+        {/* 內頁：包含插畫與金箔文字 */}
+        <div className="flex-1 flex flex-col pt-6 px-6">
+          
+          {/* 明信片手繪插畫：直接印刷在手工紙上的卡通貓吃壽司插畫 */}
+          <div className="w-full aspect-[4/3] rounded-xl overflow-hidden border border-[#eeddbb]/30 shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-stone-100 flex items-center justify-center relative mt-3">
+            {isGenerating ? (
+              <div className="flex flex-col items-center gap-1.5 py-6">
+                <RefreshCw className="w-6 h-6 text-[#9a7d46] animate-spin" />
+                <span className="text-[10px] text-amber-900/40">製作印製中...</span>
+              </div>
+            ) : error ? (
+              <span className="text-xs text-red-400 p-4 text-center">{error}</span>
+            ) : (
+              <img
+                src={photoUrl}
+                alt="Postcard Illustration"
+                className="w-full h-full object-cover mix-blend-multiply opacity-95 filter saturate-[0.98] brightness-[0.98]"
+                referrerPolicy="no-referrer"
+              />
+            )}
+          </div>
+
+          {/* 金箔質感文字區 */}
+          <div className="flex-1 flex flex-col justify-center items-center text-center mt-3 pb-4">
+            
+            {/* 金箔裝飾花邊 */}
+            <div className="flex items-center gap-2 mb-2.5 opacity-75">
+              <div className="w-8 h-[1px] bg-gradient-to-r from-transparent to-[#bba06a]" />
+              <span className="text-[#c59c50] text-[10px]">✦</span>
+              <div className="w-8 h-[1px] bg-gradient-to-l from-transparent to-[#bba06a]" />
+            </div>
+
+            {/* 祝福語：金箔微光 */}
+            <p className="mt-1 text-[11px] leading-relaxed font-semibold bg-gradient-to-b from-[#8f6d21] to-[#604914] bg-clip-text text-transparent px-1 select-text max-w-[240px] drop-shadow-[0_0.5px_0.5px_rgba(255,255,255,0.6)]">
+              {config.postcardText || '感恩這份奇妙的相遇，獻上我最溫暖的祝福！願你的每一步都充滿陽光。'}
+            </p>
+          </div>
+        </div>
+
+        {/* 底部邊緣整合深色條狀儲存按鈕（浮雕壓印效果） */}
+        {!isGenerating && !error && (
+          <button
+            onClick={handleDownload}
+            className="w-full h-12 bg-[#2d2522] hover:bg-[#201a18] active:bg-[#1a1413] text-[#ebdfd5] font-sans text-xs font-semibold tracking-[2px] uppercase shadow-[inset_0_2.5px_5px_rgba(0,0,0,0.4),_0_1px_0.5px_rgba(255,255,255,0.08)] flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-200 border-t border-[#1e1917]"
+          >
+            <Download className="w-3.5 h-3.5 text-[#ebd9cc] drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
+            <span>儲存明信片</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
