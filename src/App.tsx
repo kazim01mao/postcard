@@ -740,16 +740,18 @@ export default function App() {
             boxShadow: 'inset 0 4px 12px rgba(97, 85, 60, 0.08)'
           }}
         >
-          {/* 真實鏡頭 (保持極低透明度而非完全 0，防止 iOS Safari 為了省電而暫停視頻渲染，導致無法追蹤)
-               為了確保 iOS 継續渲染，設置透明度為 0.05 而不是更低 */}
+          {/* 真實鏡頭 - 保證渲染不暫停，不設置透明度，防止 Safari 省電模式暫停視頻導致追蹤卡住 */}
           <video
             ref={videoElementRef}
             playsInline
             autoPlay
             muted
             crossOrigin="anonymous"
-            className="absolute inset-0 w-full h-full object-cover opacity-[0.05] pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
+          
+          {/* 絕對遮蓋層 - 完全遮擋真實鏡頭，確保用戶真實面容不顯示，保護隱私 */}
+          <div className="absolute inset-0 w-full h-full bg-[#fbf9f4] pointer-events-none" />
 
           {/* 鏡像 3D 高精度動態捕捉替身容器 */}
           <div 
