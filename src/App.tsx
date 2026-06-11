@@ -88,7 +88,20 @@ export default function App() {
     }
   };
 
-  // 3. 對齊檢測實時狀態
+  // 預加載 MediaPipe 庫，加快首次啟動速度
+  useEffect(() => {
+    const preloadFaceMesh = async () => {
+      let attempts = 0;
+      while (!(window as any).FaceMesh && attempts < 100) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        attempts++;
+      }
+      if ((window as any).FaceMesh) {
+        console.log('✅ MediaPipe FaceMesh 已預加載');
+      }
+    };
+    preloadFaceMesh();
+  }, []);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [isCurrentlyAligned, setIsCurrentlyAligned] = useState(false);
   const [alignmentProgress, setAlignmentProgress] = useState(0); // 0 到 100
@@ -425,16 +438,24 @@ export default function App() {
     setAlignmentHint('⌛ 正在授權喚醒相機與加載人臉算法...');
 
     try {
+      // 檢查 MediaPipe 庫是否已加載，若未加載則等待
+      let attempts = 0;
+      while (!(window as any).FaceMesh && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+
       if (!(window as any).FaceMesh) {
-        throw new Error('MediaPipe 庫腳本尚未完全載入，請稍候。');
+        throw new Error('MediaPipe 庫腳本加載超時，請檢查網絡連接。');
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 1280 }
+          width: { ideal: 1280, min: 320 },
+          height: { ideal: 1280, min: 240 }
           // 移除強制 landscape 比例，適配手機端原生 Portrait 畫面
+          // 添加最小分辨率，確保手機端可以獲得支持的分辨率
         },
         audio: false,
       });
@@ -444,9 +465,19 @@ export default function App() {
         videoElementRef.current.srcObject = stream;
         // 在行動端 Safari，確保影片強制播放
         videoElementRef.current.setAttribute('playsinline', 'true');
-        videoElementRef.current.play().catch((err: any) => {
-          console.warn('Camera stream play was interrupted or prevented by browser:', err);
-        });
+        videoElementRef.current.setAttribute('autoplay', 'true');
+        videoElementRef.current.setAttribute('muted', 'true');
+        
+        // 等待視頻元數據加載完成再播放
+        const playPromise = videoElementRef.current.play();
+        if (playPromise !== undefined) {
+          try {
+            await playPromise;
+          } catch (err: any) {
+            console.warn('相機流播放被中斷或被瀏覽器阻止:', err);
+            // 繼續執行，不中斷流程
+          }
+        }
       }
 
       const faceMesh = new (window as any).FaceMesh({
@@ -455,9 +486,9 @@ export default function App() {
 
       faceMesh.setOptions({
         maxNumFaces: 1,
-        refineLandmarks: false,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
+        refineLandmarks: true, // 提高精度
+        minDetectionConfidence: 0.6, // 調整檢測信心度
+        minTrackingConfidence: 0.6,  // 調整追蹤信心度
       });
 
       faceMesh.onResults(handleFaceMeshResults);
@@ -465,36 +496,53 @@ export default function App() {
       if (videoElementRef.current) {
         isTrackingRef.current = true;
         
-        const tick = async () => {
-          if (!isTrackingRef.current) return;
-          
-          const video = videoElementRef.current;
-          if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-            try {
-              await faceMesh.send({ image: video });
-            } catch (err) {
-              console.warn('FaceMesh send frame error:', err);
-            }
+        // 等待視頻真正準備好再開始追蹤
+        const videoElement = videoElementRef.current;
+        const startTracking = async () => {
+          // 等待視頻元素有可播放的狀態
+          if (videoElement.readyState < 2) {
+            await new Promise(resolve => {
+              videoElement.addEventListener('canplay', resolve, { once: true });
+            });
           }
-          
-          animationFrameIdRef.current = requestAnimationFrame(tick);
-        };
-        
-        // 啟動追蹤循環
-        tick();
 
-        activeCameraRef.current = {
-          stop: () => {
-            isTrackingRef.current = false;
-            if (animationFrameIdRef.current) {
-              cancelAnimationFrame(animationFrameIdRef.current);
-              animationFrameIdRef.current = null;
+          const tick = async () => {
+            if (!isTrackingRef.current) return;
+            
+            const video = videoElementRef.current;
+            if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+              try {
+                await faceMesh.send({ image: video });
+              } catch (err) {
+                console.warn('FaceMesh send frame error:', err);
+              }
             }
-          }
+            
+            animationFrameIdRef.current = requestAnimationFrame(tick);
+          };
+          
+          // 啟動追蹤循環
+          tick();
+
+          activeCameraRef.current = {
+            stop: () => {
+              isTrackingRef.current = false;
+              if (animationFrameIdRef.current) {
+                cancelAnimationFrame(animationFrameIdRef.current);
+                animationFrameIdRef.current = null;
+              }
+            }
+          };
+          
+          setPhase(AppPhase.ACTIVE);
+          setAlignmentHint('🎯 請將臉龐套入虛線圈圈中心');
         };
-        
-        setPhase(AppPhase.ACTIVE);
-        setAlignmentHint('🎯 請將臉龐套入虛線圈圈中心');
+
+        startTracking().catch(err => {
+          console.error('Face tracking initialization failed:', err);
+          setPhase(AppPhase.ACTIVE);
+          setAlignmentHint('⚠️ 已為您開通「靜態對位模式」，直接點擊下方藍色膠囊即可進入下一步！');
+        });
       }
 
     } catch (err: any) {
@@ -692,12 +740,15 @@ export default function App() {
             boxShadow: 'inset 0 4px 12px rgba(97, 85, 60, 0.08)'
           }}
         >
-          {/* 真實鏡頭 (保持極低透明度而非完全 0，防止 iOS Safari 為了省電而暫停視頻渲染，導致無法追蹤) */}
+          {/* 真實鏡頭 (保持極低透明度而非完全 0，防止 iOS Safari 為了省電而暫停視頻渲染，導致無法追蹤)
+               為了確保 iOS 継續渲染，設置透明度為 0.05 而不是更低 */}
           <video
             ref={videoElementRef}
             playsInline
+            autoPlay
             muted
-            className="absolute inset-0 w-full h-full object-cover opacity-[0.01] pointer-events-none"
+            crossOrigin="anonymous"
+            className="absolute inset-0 w-full h-full object-cover opacity-[0.05] pointer-events-none"
           />
 
           {/* 鏡像 3D 高精度動態捕捉替身容器 */}
@@ -707,9 +758,9 @@ export default function App() {
               width: '100%',
               height: '100%',
               perspective: '1000px', // 為 3D 偏轉創造極富景深感的空間
-              // 放大位移響應倍率至 1.2，讓頭像的移動更加敏銳準確且明顯
+              // 手機端調整位移響應倍率至 0.8，確保 avatar 不會超出框體，同時保持足夠的反應靈敏度
               transform: avatarState.detected 
-                ? `translate(calc(-50% + ${avatarState.x * 1.2}px), calc(-50% + ${avatarState.y * 1.2}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
+                ? `translate(calc(-50% + ${avatarState.x * 0.8}px), calc(-50% + ${avatarState.y * 0.8}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
                 : 'translate(-50%, -50%) scale(1.0)',
               // 縮短過渡時間，讓跟隨更為即時準確 (從 0.12s 降為 0.08s)
               transition: avatarState.detected ? 'transform 0.08s cubic-bezier(0.2, 0.8, 0.4, 1)' : 'transform 0.8s ease-in-out'
