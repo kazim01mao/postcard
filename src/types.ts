@@ -22,7 +22,7 @@ export interface AlignmentConfig {
   initialUrl?: string;     // 最初呈現 initial 檔案路徑 (支援圖片或影片)
   resultUrl?: string;      // 變裝結果大圖/影片路徑 (result)
   finalUrl?: string;       // 最終對齊後的變裝/圖片路徑 (final)
-  avatarUrl?: string;      // 用戶隱私遮罩卡通替身圖片 (e.g. ./assets/aistudio/Y/Y0.png)
+  avatarUrl?: string;      // 用戶隱私遮罩卡通替身圖片 (e.g. ./assets/Y/Y0.png)
   title?: string;          // 專屬頁面大標題 (如 '給 Alice 的驚喜禮物')
   subtitle?: string;       // 專屬頁面副標題
   buttonText?: string;     // 主導按鈕文字 (如 '查收 Alice 的禮物')

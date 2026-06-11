@@ -688,14 +688,14 @@ export default function App() {
               {/* 卡通替身 Y0 圖片 (或配置的 avatarUrl) */}
               <div className="relative">
                 <img
-                  src={config.avatarUrl || './assets/aistudio/Y/Y0.png'}
+                  src={config.avatarUrl || './assets/Y/Y0.png'}
                   referrerPolicy="no-referrer"
                   className="w-[124px] h-[124px] object-contain filter drop-shadow-[0_4px_10px_rgba(110,95,70,0.22)]"
                   alt="3D 隱私保護替身"
                   onError={(e) => {
                     console.warn('Avatar image fail, fallback loading Y1');
                     // 萬一出錯，可用首頁底圖作為 fallback
-                    e.currentTarget.src = config.initialUrl || './assets/aistudio/Y/Y1.png';
+                    e.currentTarget.src = config.initialUrl || './assets/Y/Y1.png';
                   }}
                 />
                 

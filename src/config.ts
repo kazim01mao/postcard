@@ -25,11 +25,11 @@ export const ALIGNMENT_CONFIG: AlignmentConfig = {
   subtitle: 'Realtime Transformation', // 預設首頁副標題
   buttonText: '查收這份禮物', // 預設主導按鈕文字
   successMessage: '感恩這份奇妙的相遇，獻上我最溫暖的祝福！', // 預設祝賀賀詞
-  initialUrl: './assets/aistudio/Y/Y1.png', // 最初呈現 initial
-  resultUrl: './assets/aistudio/Y/Y2.png',   // 然後呈現 result
-  finalUrl: './assets/aistudio/Y/Y3.png',     // 然後呈現 final
-  avatarUrl: './assets/aistudio/Y/Y0.png',    // 隱私保護替身頭像圖
-  postcardPhotoUrl: './assets/aistudio/Y/Y4.png', // 最後生成的專屬明信片核心照片 cardpic
+  initialUrl: './assets/Y/Y1.png', // 最初呈現 initial
+  resultUrl: './assets/Y/Y2.png',   // 然後呈現 result
+  finalUrl: './assets/Y/Y3.png',     // 然後呈現 final
+  avatarUrl: './assets/Y/Y0.png',    // 隱私保護替身頭像圖
+  postcardPhotoUrl: './assets/Y/Y4.png', // 最後生成的專屬明信片核心照片 cardpic
   postcardText: '感恩這份奇妙的相遇，獻上我最溫暖的祝福！願你的每一步都充滿陽光。', // 預設明信片字句
   guideTip: '「請將面部放入框線內，用於代入角色」', // 引導指示提示字
 };
@@ -88,11 +88,11 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     width: '180px',
     height: '180px',
     borderRadius: '50%',
-    initialUrl: './assets/aistudio/Y/Y1.png',
-    resultUrl: './assets/aistudio/Y/Y2.png',
-    finalUrl: './assets/aistudio/Y/Y3.png',
-    postcardPhotoUrl: './assets/aistudio/Y/Y4.png',
-    avatarUrl: './assets/aistudio/Y/Y0.png',
+    initialUrl: './assets/Y/Y1.png',
+    resultUrl: './assets/Y/Y2.png',
+    finalUrl: './assets/Y/Y3.png',
+    postcardPhotoUrl: './assets/Y/Y4.png',
+    avatarUrl: './assets/Y/Y0.png',
     title: '專屬變身魔法',
     successMessage: '您的專屬變身魔法已成功啟動！',
     guideTip: '「請將面部放入框線內，用於代入角色」',
