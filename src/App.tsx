@@ -13,6 +13,11 @@ import { PostcardOverlay } from './components/PostcardOverlay';
 export default function App() {
   // 1. 核心流程與轉場狀態 (IDLE, LOADING, ACTIVE, ALIGNED, STAGE2, STAGE3)
   const [phase, setPhase] = useState<AppPhase>(AppPhase.IDLE);
+  const phaseRef = useRef<AppPhase>(phase);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+  
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [isPostcardOpen, setIsPostcardOpen] = useState(false);
   
@@ -255,7 +260,8 @@ export default function App() {
     const video = videoElementRef.current;
     const container = containerRef.current;
     
-    if (phase !== AppPhase.ACTIVE || !video || !container) {
+    // 使用 phaseRef 避免 stale closure 導致回調永遠卡在 LOADING 狀態
+    if (phaseRef.current !== AppPhase.ACTIVE || !video || !container) {
       setIsFaceDetected(false);
       setIsCurrentlyAligned(false);
       setAvatarState(prev => ({ ...prev, detected: false }));
@@ -671,7 +677,7 @@ export default function App() {
               height: '100%',
               perspective: '1000px', // 為 3D 偏轉創造極富景深感的空間
               transform: avatarState.detected 
-                ? `translate(calc(-50% + ${avatarState.x * 0.70}px), calc(-50% + ${avatarState.y * 0.70}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
+                ? `translate(calc(-50% + ${avatarState.x * 1.0}px), calc(-50% + ${avatarState.y * 1.0}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
                 : 'translate(-50%, -50%) scale(1.0)',
               // 微動作平滑緩和過渡，避免手震抖動
               transition: avatarState.detected ? 'transform 0.12s cubic-bezier(0.25, 1, 0.5, 1)' : 'transform 0.8s ease-in-out'
