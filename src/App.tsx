@@ -113,6 +113,8 @@ export default function App() {
   const finalVideoRef = useRef<HTMLVideoElement>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
   const activeCameraRef = useRef<any>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+  const isTrackingRef = useRef<boolean>(false);
   const alignmentStartRef = useRef<number | null>(null);
   const [showWhiteFlash, setShowWhiteFlash] = useState(false);
 
@@ -243,7 +245,7 @@ export default function App() {
         activeCameraRef.current = null;
       }
       if (videoStreamRef.current) {
-        videoStreamRef.current.getTracks().forEach((track) => track.stop());
+        videoStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
         videoStreamRef.current = null;
       }
     }, 1500);
@@ -418,7 +420,7 @@ export default function App() {
     setAlignmentHint('⌛ 正在授權喚醒相機與加載人臉算法...');
 
     try {
-      if (!(window as any).FaceMesh || !(window as any).Camera) {
+      if (!(window as any).FaceMesh) {
         throw new Error('MediaPipe 庫腳本尚未完全載入，請稍候。');
       }
 
@@ -456,17 +458,35 @@ export default function App() {
       faceMesh.onResults(handleFaceMeshResults);
 
       if (videoElementRef.current) {
-        const cameraInst = new (window as any).Camera(videoElementRef.current, {
-          onFrame: async () => {
-            if (videoElementRef.current) {
-              await faceMesh.send({ image: videoElementRef.current });
+        isTrackingRef.current = true;
+        
+        const tick = async () => {
+          if (!isTrackingRef.current) return;
+          
+          const video = videoElementRef.current;
+          if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+            try {
+              await faceMesh.send({ image: video });
+            } catch (err) {
+              console.warn('FaceMesh send frame error:', err);
             }
           }
-          // 移除強制寫死的 640x480 width/height，避免在手機端將畫面扭曲或破壞
-        });
+          
+          animationFrameIdRef.current = requestAnimationFrame(tick);
+        };
+        
+        // 啟動追蹤循環
+        tick();
 
-        activeCameraRef.current = cameraInst;
-        cameraInst.start();
+        activeCameraRef.current = {
+          stop: () => {
+            isTrackingRef.current = false;
+            if (animationFrameIdRef.current) {
+              cancelAnimationFrame(animationFrameIdRef.current);
+              animationFrameIdRef.current = null;
+            }
+          }
+        };
         
         setPhase(AppPhase.ACTIVE);
         setAlignmentHint('🎯 請將臉龐套入虛線圈圈中心');
@@ -484,12 +504,17 @@ export default function App() {
 
   // 13. 重設還原
   const resetMagic = () => {
+    isTrackingRef.current = false;
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
     if (activeCameraRef.current) {
       try { activeCameraRef.current.stop(); } catch(e){}
       activeCameraRef.current = null;
     }
     if (videoStreamRef.current) {
-      videoStreamRef.current.getTracks().forEach((track) => track.stop());
+      videoStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       videoStreamRef.current = null;
     }
     if (videoElementRef.current) {
@@ -524,7 +549,7 @@ export default function App() {
         try { activeCameraRef.current.stop(); } catch(e){}
       }
       if (videoStreamRef.current) {
-        videoStreamRef.current.getTracks().forEach((track) => track.stop());
+        videoStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       }
     };
   }, []);
