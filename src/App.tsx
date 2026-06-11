@@ -62,7 +62,7 @@ export default function App() {
   }, [initialSrc, resultSrc, finalSrc, config]);
 
   const handleInitialError = () => {
-    if (initialSrc.startsWith('./assets/')) {
+    if (initialSrc.startsWith('./assets/') || initialSrc.startsWith('/assets/')) {
       // 系統填充圖 2：最初呈現 initial 的漂亮星光金砂底色
       setInitialSrc('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800');
     } else {
@@ -71,7 +71,7 @@ export default function App() {
   };
 
   const handleResultError = () => {
-    if (resultSrc.startsWith('./assets/')) {
+    if (resultSrc.startsWith('./assets/') || resultSrc.startsWith('/assets/')) {
       // 系統填充圖 3：然後呈現 result 的高解析度變身結果肖像
       setResultSrc('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800&h=1200');
     } else {
@@ -80,7 +80,7 @@ export default function App() {
   };
 
   const handleFinalError = () => {
-    if (finalSrc.startsWith('./assets/')) {
+    if (finalSrc.startsWith('./assets/') || finalSrc.startsWith('/assets/')) {
       // 系統填充圖 4：然後呈現 final 的動態唯美漫天粒子灑落影片
       setFinalSrc('https://assets.mixkit.co/videos/preview/mixkit-slow-motion-of-falling-glitter-41595-large.mp4');
     } else {
@@ -158,9 +158,14 @@ export default function App() {
       lower.endsWith('.webm') ||
       lower.endsWith('.mov') ||
       lower.endsWith('.m4v') ||
+      lower.endsWith('.avi') ||
+      lower.endsWith('.mkv') ||
+      lower.endsWith('.3gp') ||
+      lower.endsWith('.ogg') ||
       lower.includes('video') ||
       lower.includes('mp4') ||
-      lower.includes('mov')
+      lower.includes('mov') ||
+      lower.includes('webm')
     );
   };
 
