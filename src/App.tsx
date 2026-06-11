@@ -676,11 +676,12 @@ export default function App() {
               width: '100%',
               height: '100%',
               perspective: '1000px', // 為 3D 偏轉創造極富景深感的空間
+              // 放大位移響應倍率至 1.2，讓頭像的移動更加敏銳準確且明顯
               transform: avatarState.detected 
-                ? `translate(calc(-50% + ${avatarState.x * 1.0}px), calc(-50% + ${avatarState.y * 1.0}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
+                ? `translate(calc(-50% + ${avatarState.x * 1.2}px), calc(-50% + ${avatarState.y * 1.2}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
                 : 'translate(-50%, -50%) scale(1.0)',
-              // 微動作平滑緩和過渡，避免手震抖動
-              transition: avatarState.detected ? 'transform 0.12s cubic-bezier(0.25, 1, 0.5, 1)' : 'transform 0.8s ease-in-out'
+              // 縮短過渡時間，讓跟隨更為即時準確 (從 0.12s 降為 0.08s)
+              transition: avatarState.detected ? 'transform 0.08s cubic-bezier(0.2, 0.8, 0.4, 1)' : 'transform 0.8s ease-in-out'
             }}
           >
             {/* 3D 擺頭與偏轉姿態捕捉盒 */}
@@ -699,7 +700,8 @@ export default function App() {
                 <img
                   src={config.avatarUrl || './assets/Y/Y0.png'}
                   referrerPolicy="no-referrer"
-                  className="w-[124px] h-[124px] object-contain filter drop-shadow-[0_4px_10px_rgba(110,95,70,0.22)]"
+                  // 根據使用者反饋，將圖標縮小，讓其在線框內有更多移動空間，同時強化陰影立體感
+                  className="w-[84px] h-[84px] object-contain filter drop-shadow-[0_4px_10px_rgba(110,95,70,0.35)]"
                   alt="3D 隱私保護替身"
                   onError={(e) => {
                     console.warn('Avatar image fail, fallback loading Y1');
