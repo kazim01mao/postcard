@@ -3,9 +3,130 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import * as THREE from 'three';
 import { AlignmentConfig } from '../types';
+
+// 🌟 THREE.JS 粒子動畫效果組件
+const ThreeParticleBackground: React.FC = () => {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+
+    // 1. Scene setup
+    const scene = new THREE.Scene();
+
+    // 2. Camera setup
+    const width = mount.clientWidth || window.innerWidth;
+    const height = mount.clientHeight || window.innerHeight;
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
+    camera.position.z = 5;
+
+    // 3. Renderer setup
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    mount.appendChild(renderer.domElement);
+
+    // 4. Particle Geometry & Material
+    const particlesCount = 180;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particlesCount * 3);
+    const speeds: number[] = [];
+
+    for (let i = 0; i < particlesCount; i++) {
+      // 粒子隨機散佈
+      positions[i * 3] = (Math.random() - 0.5) * 8; // x
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 12; // y
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 4; // z
+      speeds.push(Math.random() * 0.015 + 0.005);
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    // 創建金箔質感圓形粒子貼圖
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+      grad.addColorStop(0, 'rgba(255, 235, 170, 1)');
+      grad.addColorStop(0.3, 'rgba(220, 170, 75, 0.8)');
+      grad.addColorStop(1, 'rgba(220, 170, 75, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 16, 16);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+
+    const material = new THREE.PointsMaterial({
+      size: 0.16,
+      map: texture,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const particleSystem = new THREE.Points(geometry, material);
+    scene.add(particleSystem);
+
+    // 5. Animation loop
+    let animationFrameId: number;
+    const animate = () => {
+      const posArr = geometry.attributes.position.array as Float32Array;
+      for (let i = 0; i < particlesCount; i++) {
+        // 粒子向上漂移
+        posArr[i * 3 + 1] += speeds[i];
+        // 粒子橫向微風擺動
+        posArr[i * 3] += Math.sin(Date.now() * 0.0008 + i) * 0.0015;
+
+        // 超出邊界時重置到底部
+        if (posArr[i * 3 + 1] > 6) {
+          posArr[i * 3 + 1] = -6;
+          posArr[i * 3] = (Math.random() - 0.5) * 8;
+        }
+      }
+      geometry.attributes.position.needsUpdate = true;
+
+      // 旋轉粒子系統
+      particleSystem.rotation.y += 0.001;
+      particleSystem.rotation.x += 0.0004;
+
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    // 6. Handle Resize
+    const handleResize = () => {
+      if (!mount) return;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+      if (mount && renderer.domElement.parentNode === mount) {
+        mount.removeChild(renderer.domElement);
+      }
+      geometry.dispose();
+      material.dispose();
+      texture.dispose();
+    };
+  }, []);
+
+  return <div ref={mountRef} className="absolute inset-0 pointer-events-none z-0" />;
+};
 
 interface PostcardOverlayProps {
   isOpen: boolean;
@@ -192,10 +313,13 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
   const photoUrl = config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
 
   return (
-    <div className="absolute inset-0 z-[100] bg-black/55 backdrop-blur-md flex items-center justify-center p-3.5 pointer-events-auto select-none animate-[fadeIn_0.3s_ease-out]">
+    <div className="absolute inset-0 z-[100] bg-black/55 backdrop-blur-md flex items-center justify-center p-3.5 pointer-events-auto select-none animate-[fadeIn_0.3s_ease-out] overflow-hidden">
       
+      {/* THREE.JS 粒子特效背景 */}
+      <ThreeParticleBackground />
+
       {/* 🔮 珍貴的圓角紙質明信片 (無彈窗外加框架，它自身就是明信片) */}
-      <div className="w-[330px] h-[500px] bg-[#FAF7F0] rounded-[24px] border border-[#e3dac9] shadow-[0_24px_55px_rgba(50,45,35,0.28)] flex flex-col justify-between relative overflow-hidden animate-scaleUp">
+      <div className="w-[330px] h-[500px] bg-[#FAF7F0] rounded-[24px] border border-[#e3dac9] shadow-[0_24px_55px_rgba(50,45,35,0.28)] flex flex-col justify-between relative overflow-hidden animate-scaleUp z-10">
         
         {/* 右上角精緻、壓印風格的圓形返回按鈕 */}
         <button
