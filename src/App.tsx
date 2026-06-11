@@ -755,38 +755,40 @@ export default function App() {
 
           {/* 鏡像 3D 高精度動態捕捉替身容器 */}
           <div 
-            className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none select-none transition-all"
+            className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none select-none"
             style={{
               width: '100%',
               height: '100%',
-              perspective: '1000px', // 為 3D 偏轉創造極富景深感的空間
-              // 手機端調整位移響應倍率至 0.8，確保 avatar 不會超出框體，同時保持足夠的反應靈敏度
+              // 手機端關鍵優化：偵測到人臉時啟用硬體加速合成層，並完全禁用所有 CSS transition/animation 避免與高頻 JS transform 更新競爭
+              willChange: avatarState.detected ? 'transform' : 'auto',
               transform: avatarState.detected 
                 ? `translate(calc(-50% + ${avatarState.x * 0.8}px), calc(-50% + ${avatarState.y * 0.8}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
                 : 'translate(-50%, -50%) scale(1.0)',
-              // ⚠️ 手機端關鍵修復：偵測到人臉時移除 CSS transition，避免 transition 與高頻 requestAnimationFrame 更新互相競爭導致 avatar 卡住不動
               transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
             }}
           >
-            {/* 3D 擺頭與偏轉姿態捕捉盒 */}
+            {/* 姿態指示層（手機端簡化為僅 2D rotateZ 旋轉，避免 3D rotateX/rotateY 在移動端 GPU 合成瓶頸導致 avatar 卡住） */}
             <div 
               className={`relative flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
               style={{
                 transform: avatarState.detected
-                  ? `rotateZ(${avatarState.roll}deg) rotateY(${avatarState.yaw}deg) rotateX(${avatarState.pitch}deg)`
+                  ? `rotateZ(${avatarState.roll}deg)`
                   : 'none',
-                transformStyle: 'preserve-3d',
-                // ⚠️ 手機端關鍵修復：偵測到人臉時移除 CSS transition，避免 transition 與高頻更新互相競爭導致 3D 旋轉卡住
+                willChange: avatarState.detected ? 'transform' : 'auto',
                 transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
               }}
             >
-              {/* 卡通替身 Y0 圖片 (或配置的 avatarUrl) */}
-              <div className="relative">
+              {/* 卡通替身 Y0 圖片 (或配置的 avatarUrl) — 手機端用 box-shadow 取代 filter drop-shadow 避免 filter 觸發昂貴重繪 */}
+              <div className="relative" style={{ filter: avatarState.detected ? 'none' : undefined }}>
                 <img
                   src={config.avatarUrl || './assets/Y/Y0.png'}
                   referrerPolicy="no-referrer"
-                  // 根據使用者反饋，將圖標縮小，讓其在線框內有更多移動空間，同時強化陰影立體感
-                  className="w-[84px] h-[84px] object-contain filter drop-shadow-[0_4px_10px_rgba(110,95,70,0.35)]"
+                  className="w-[84px] h-[84px] object-contain"
+                  style={{
+                    filter: avatarState.detected
+                      ? 'none'
+                      : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.35))'
+                  }}
                   alt="3D 隱私保護替身"
                   onError={(e) => {
                     console.warn('Avatar image fail, fallback loading Y1');
