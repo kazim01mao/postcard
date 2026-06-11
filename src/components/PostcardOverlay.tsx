@@ -140,6 +140,38 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isOpen) {
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          const now = ctx.currentTime;
+          const freqs = [659.25, 880.00, 1109.73, 1318.51]; // E5 -> A5 -> C#6 -> E6
+          freqs.forEach((freq, index) => {
+            const osc = ctx.createOscillator();
+            const oscGain = ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + index * 0.08);
+
+            oscGain.gain.setValueAtTime(0, now + index * 0.08);
+            oscGain.gain.linearRampToValueAtTime(0.2, now + index * 0.08 + 0.03);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.5);
+
+            osc.connect(oscGain);
+            oscGain.connect(ctx.destination);
+
+            osc.start(now + index * 0.08);
+            osc.stop(now + index * 0.08 + 0.6);
+          });
+        }
+      } catch (e) {
+        console.warn('瀏覽器不支援 Web Audio 或尚未授權播音：', e);
+      }
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!isOpen) {
       setGeneratedImgSrc(null);
       return;
@@ -187,11 +219,11 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         // ===============================================
         // 🖼️ 步驟 2：渲染照片 (居中裁切適配，完美保留，營造油墨印刷感)
         // ===============================================
-        // 照片區域設計：上邊距 120px，寬 640px，高 480px (4:3 比例)
-        const px = 80;
-        const py = 120;
-        const pw = 640;
-        const ph = 480;
+        // 照片區域設計：上邊距 110px，寬 560px，高 560px (1:1 比例)
+        const px = 120;
+        const py = 110;
+        const pw = 560;
+        const ph = 560;
         const r = 24; // 圓半徑
 
         ctx.save();
@@ -240,19 +272,19 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         ctx.strokeStyle = lineGrad;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(150, 685);
-        ctx.lineTo(650, 685);
+        ctx.moveTo(150, 715);
+        ctx.lineTo(650, 715);
         ctx.stroke();
 
         // 金星印記
-        const goldGrad = ctx.createLinearGradient(0, 670, 0, 770);
+        const goldGrad = ctx.createLinearGradient(0, 700, 0, 800);
         goldGrad.addColorStop(0, '#be8f2a');
         goldGrad.addColorStop(0.5, '#fdf7c3');
         goldGrad.addColorStop(1, '#9e721d');
 
         ctx.fillStyle = goldGrad;
         ctx.font = '22px serif';
-        ctx.fillText('✦', 400, 692);
+        ctx.fillText('✦', 400, 722);
 
         // 溫暖金箔字句印刷
         const textGrad = ctx.createLinearGradient(0, 810, 0, 980);
@@ -270,7 +302,7 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         }
 
         lines.forEach((line, index) => {
-          ctx.fillText(line, 400, 815 + index * 48);
+          ctx.fillText(line, 400, 825 + index * 48);
         });
 
         // 轉換為 JPEG 資料，壓縮率為 93% 保持超高品質又能快速儲存
@@ -319,7 +351,7 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
       <ThreeParticleBackground />
 
       {/* 🔮 珍貴的圓角紙質明信片 (無彈窗外加框架，它自身就是明信片) */}
-      <div className="w-[330px] h-[500px] bg-[#FAF7F0] rounded-[24px] border border-[#e3dac9] shadow-[0_24px_55px_rgba(50,45,35,0.28)] flex flex-col justify-between relative overflow-hidden animate-scaleUp z-10">
+      <div className="w-[330px] h-[540px] bg-[#FAF7F0] rounded-[24px] border border-[#e3dac9] shadow-[0_24px_55px_rgba(50,45,35,0.28)] flex flex-col justify-between relative overflow-hidden animate-scaleUp z-10">
         
         {/* 右上角精緻、壓印風格的圓形返回按鈕 */}
         <button
@@ -334,7 +366,7 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         <div className="flex-1 flex flex-col pt-6 px-6">
           
           {/* 明信片手繪插畫：直接印刷在手工紙上的卡通貓吃壽司插畫 */}
-          <div className="w-full aspect-[4/3] rounded-xl overflow-hidden border border-[#eeddbb]/30 shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-stone-100 flex items-center justify-center relative mt-3">
+          <div className="w-full aspect-square rounded-xl overflow-hidden border border-[#eeddbb]/30 shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-stone-100 flex items-center justify-center relative mt-3">
             {isGenerating ? (
               <div className="flex flex-col items-center gap-1.5 py-6">
                 <RefreshCw className="w-6 h-6 text-[#9a7d46] animate-spin" />
