@@ -764,8 +764,8 @@ export default function App() {
               transform: avatarState.detected 
                 ? `translate(calc(-50% + ${avatarState.x * 0.8}px), calc(-50% + ${avatarState.y * 0.8}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
                 : 'translate(-50%, -50%) scale(1.0)',
-              // 縮短過渡時間，讓跟隨更為即時準確 (從 0.12s 降為 0.08s)
-              transition: avatarState.detected ? 'transform 0.08s cubic-bezier(0.2, 0.8, 0.4, 1)' : 'transform 0.8s ease-in-out'
+              // ⚠️ 手機端關鍵修復：偵測到人臉時移除 CSS transition，避免 transition 與高頻 requestAnimationFrame 更新互相競爭導致 avatar 卡住不動
+              transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
             }}
           >
             {/* 3D 擺頭與偏轉姿態捕捉盒 */}
@@ -776,7 +776,8 @@ export default function App() {
                   ? `rotateZ(${avatarState.roll}deg) rotateY(${avatarState.yaw}deg) rotateX(${avatarState.pitch}deg)`
                   : 'none',
                 transformStyle: 'preserve-3d',
-                transition: avatarState.detected ? 'transform 0.10s cubic-bezier(0.25, 1, 0.5, 1)' : 'transform 0.8s ease-in-out'
+                // ⚠️ 手機端關鍵修復：偵測到人臉時移除 CSS transition，避免 transition 與高頻更新互相競爭導致 3D 旋轉卡住
+                transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
               }}
             >
               {/* 卡通替身 Y0 圖片 (或配置的 avatarUrl) */}
