@@ -753,61 +753,68 @@ export default function App() {
           {/* 絕對遮蓋層 - 完全遮擋真實鏡頭，確保用戶真實面容不顯示，保護隱私 */}
           <div className="absolute inset-0 w-full h-full bg-[#fbf9f4] pointer-events-none" />
 
-          {/* 鏡像 3D 高精度動態捕捉替身容器 */}
+          {/* 鏡像 3D 高精度動態捕捉替身容器 — 分層架構：外層居中定位（無 calc），內層純 px 跟蹤偏移（無 calc），徹底避免手機端 calc() inside transform 的相容性 bug */}
+          {/* Layer A: 純居中容器，僅負責將左上角移到正中心 */}
           <div 
-            className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none select-none"
+            className="absolute top-1/2 left-1/2 pointer-events-none select-none"
             style={{
-              width: '100%',
-              height: '100%',
-              // 手機端關鍵優化：偵測到人臉時啟用硬體加速合成層，並完全禁用所有 CSS transition/animation 避免與高頻 JS transform 更新競爭
-              willChange: avatarState.detected ? 'transform' : 'auto',
-              transform: avatarState.detected 
-                ? `translate(calc(-50% + ${avatarState.x * 0.8}px), calc(-50% + ${avatarState.y * 0.8}px)) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
-                : 'translate(-50%, -50%) scale(1.0)',
+              width: avatarState.detected ? 'auto' : '100%',
+              height: avatarState.detected ? 'auto' : '100%',
+              transform: 'translate(-50%, -50%)',
               transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
             }}
           >
-            {/* 姿態指示層（手機端簡化為僅 2D rotateZ 旋轉，避免 3D rotateX/rotateY 在移動端 GPU 合成瓶頸導致 avatar 卡住） */}
-            <div 
-              className={`relative flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
+            {/* Layer B: 人臉追蹤偏移容器，僅使用純 px 值 translate，不包含 calc() */}
+            <div
               style={{
                 transform: avatarState.detected
-                  ? `rotateZ(${avatarState.roll}deg)`
-                  : 'none',
+                  ? `translate(${avatarState.x * 0.8}px, ${avatarState.y * 0.8}px) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
+                  : 'translate(0px, 0px) scale(1.0)',
                 willChange: avatarState.detected ? 'transform' : 'auto',
                 transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
               }}
             >
-              {/* 卡通替身 Y0 圖片 (或配置的 avatarUrl) — 手機端用 box-shadow 取代 filter drop-shadow 避免 filter 觸發昂貴重繪 */}
-              <div className="relative" style={{ filter: avatarState.detected ? 'none' : undefined }}>
-                <img
-                  src={config.avatarUrl || './assets/Y/Y0.png'}
-                  referrerPolicy="no-referrer"
-                  className="w-[84px] h-[84px] object-contain"
-                  style={{
-                    filter: avatarState.detected
-                      ? 'none'
-                      : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.35))'
-                  }}
-                  alt="3D 隱私保護替身"
-                  onError={(e) => {
-                    console.warn('Avatar image fail, fallback loading Y1');
-                    // 萬一出錯，可用首頁底圖作為 fallback
-                    e.currentTarget.src = config.initialUrl || './assets/Y/Y1.png';
-                  }}
-                />
-                
-                {/* 狀態一：當完美對齊時，呈現在替身旁邊的閃爍小愛心/小閃星 */}
-                {isCurrentlyAligned && (
-                  <div className="absolute -top-3 -right-3 animate-bounce">
-                    <span className="text-xl">✨</span>
-                  </div>
-                )}
-                {isCurrentlyAligned && (
-                  <div className="absolute -bottom-2 -left-2 animate-bounce delay-150">
-                    <span className="text-lg">💖</span>
-                  </div>
-                )}
+              {/* Layer C: 旋轉容器，僅負責 rotateZ 歪頭跟隨 */}
+              <div 
+                className={`flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
+                style={{
+                  transform: avatarState.detected
+                    ? `rotateZ(${avatarState.roll}deg)`
+                    : 'none',
+                  willChange: avatarState.detected ? 'transform' : 'auto',
+                  transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
+                }}
+              >
+                {/* 卡通替身 Y0 圖片 — 手機端追蹤時移除 filter 避免觸發昂貴重繪 */}
+                <div style={{ filter: avatarState.detected ? 'none' : undefined }}>
+                  <img
+                    src={config.avatarUrl || './assets/Y/Y0.png'}
+                    referrerPolicy="no-referrer"
+                    className="w-[84px] h-[84px] object-contain"
+                    style={{
+                      filter: avatarState.detected
+                        ? 'none'
+                        : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.35))'
+                    }}
+                    alt="3D 隱私保護替身"
+                    onError={(e) => {
+                      console.warn('Avatar image fail, fallback loading Y1');
+                      e.currentTarget.src = config.initialUrl || './assets/Y/Y1.png';
+                    }}
+                  />
+                  
+                  {/* 狀態一：當完美對齊時，呈現在替身旁邊的閃爍小愛心/小閃星 */}
+                  {isCurrentlyAligned && (
+                    <div className="absolute -top-3 -right-3 animate-bounce">
+                      <span className="text-xl">✨</span>
+                    </div>
+                  )}
+                  {isCurrentlyAligned && (
+                    <div className="absolute -bottom-2 -left-2 animate-bounce delay-150">
+                      <span className="text-lg">💖</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
