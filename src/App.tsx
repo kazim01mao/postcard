@@ -350,19 +350,19 @@ export default function App() {
     const rawDx = faceCenter.x - target.centerX;
     const rawDy = faceCenter.y - target.centerY;
 
-    // 比對判斷誤差百分比 - 寬容度放寬 2.3 倍以上，極易對齊
-    const toleranceX = target.width * 0.35;
-    const toleranceY = target.height * 0.35;
+    // 比對判斷誤差百分比 - 根據反饋再度大幅放寬，讓用戶更容易對齊
+    const toleranceX = target.width * 0.65;
+    const toleranceY = target.height * 0.65;
 
     const dx = Math.abs(rawDx);
     const dy = Math.abs(rawDy);
 
     const isCenterAligned = dx <= toleranceX && dy <= toleranceY;
     
-    // 臉部大小適配度 - 極度放寬
+    // 臉部大小適配度 - 根據反饋再度大幅放寬
     const sizeRatioW = faceW / target.width;
     const sizeRatioH = faceH / target.height;
-    const isSizeAligned = sizeRatioW >= 0.45 && sizeRatioW <= 1.70 && sizeRatioH >= 0.45 && sizeRatioH <= 1.70;
+    const isSizeAligned = sizeRatioW >= 0.25 && sizeRatioW <= 2.50 && sizeRatioH >= 0.25 && sizeRatioH <= 2.50;
 
     const isAligned = isCenterAligned && isSizeAligned;
 
@@ -426,8 +426,8 @@ export default function App() {
         video: {
           facingMode: 'user',
           width: { ideal: 1280 },
-          height: { ideal: 720 },
-          aspectRatio: { ideal: 1.777777778 }
+          height: { ideal: 1280 }
+          // 移除強制 landscape 比例，適配手機端原生 Portrait 畫面
         },
         audio: false,
       });
@@ -435,6 +435,8 @@ export default function App() {
       videoStreamRef.current = stream;
       if (videoElementRef.current) {
         videoElementRef.current.srcObject = stream;
+        // 在行動端 Safari，確保影片強制播放
+        videoElementRef.current.setAttribute('playsinline', 'true');
         videoElementRef.current.play().catch((err: any) => {
           console.warn('Camera stream play was interrupted or prevented by browser:', err);
         });
@@ -459,9 +461,8 @@ export default function App() {
             if (videoElementRef.current) {
               await faceMesh.send({ image: videoElementRef.current });
             }
-          },
-          width: 640,
-          height: 480,
+          }
+          // 移除強制寫死的 640x480 width/height，避免在手機端將畫面扭曲或破壞
         });
 
         activeCameraRef.current = cameraInst;
@@ -661,12 +662,12 @@ export default function App() {
             boxShadow: 'inset 0 4px 12px rgba(97, 85, 60, 0.08)'
           }}
         >
-          {/* 真實鏡頭 (保持 100% 隱藏在背景，完全保護隱私) */}
+          {/* 真實鏡頭 (保持極低透明度而非完全 0，防止 iOS Safari 為了省電而暫停視頻渲染，導致無法追蹤) */}
           <video
             ref={videoElementRef}
             playsInline
             muted
-            className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-[0.01] pointer-events-none"
           />
 
           {/* 鏡像 3D 高精度動態捕捉替身容器 */}
