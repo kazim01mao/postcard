@@ -270,11 +270,11 @@ export default function App() {
       }
     }, 1500);
 
-    // 檢查是否為 y 用戶，若是則停留時間為 3 秒 (3000ms)，否則為 2.2 秒 (2200ms)
+    // 檢查是否為 y 用戶，若是則停留時間為 6 秒 (6000ms)，否則為 2.2 秒 (2200ms)
     const params = new URLSearchParams(window.location.search);
     const friendName = params.get('friend') || params.get('u');
     const isUserY = friendName?.toLowerCase() === 'y';
-    const transitionDelay = isUserY ? 3000 : 2200;
+    const transitionDelay = isUserY ? 6000 : 2200;
 
     // 【轉場狀態三】：過指定時間，進入 STAGE3 動態播放 final 圖片/影片
     setTimeout(() => {
@@ -681,34 +681,6 @@ export default function App() {
           {/* 1. 背景底色層 (最底) */}
           <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none z-0" />
 
-          {/* 2. 替身與特效 (中間) — 已靜態化，固定於正中心不移動 */}
-          {/* Layer A: 居中定位層 */}
-          <div 
-            className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center z-10"
-            style={{
-              width: '200px',
-              height: '200px',
-              position: 'absolute',
-              top: top,
-              left: left,
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            {/* Layer B: 靜態替身容器 */}
-            <div className="flex items-center justify-center">
-              {/* Layer C: 靜態替身圖像 */}
-              <div className="flex flex-col items-center justify-center relative">
-                <img
-                  src={config.avatarUrl || './assets/Y/Y0.png'}
-                  referrerPolicy="no-referrer"
-                  className="w-[90px] h-[90px] object-contain drop-shadow-[0_4px_10px_rgba(110,95,70,0.25)]"
-                  alt="3D 隱私保護替身"
-                  onError={(e: any) => { e.currentTarget.src = './assets/Y/Y0.png'; }}
-                />
-              </div>
-            </div>
-          </div>
-
           {/* 3. 真實鏡頭 (最上層) — 1% 透明度肉眼不可見 */}
           <video
             ref={videoElementRef}
@@ -855,7 +827,7 @@ export default function App() {
                 onClick={triggerTransitionSecquence}
                 className="w-[82%] mx-auto py-2.5 bg-[#007aff] hover:bg-[#0066d6] text-white font-sans text-xs font-semibold tracking-wider rounded-full shadow-[0_4px_12px_rgba(0,122,255,0.2)] transition-all duration-200 active:scale-[0.98] active:opacity-90 flex items-center justify-center cursor-pointer pointer-events-auto border border-white/5"
               >
-                我已代入角色，直接進入下一步
+                我想象完畢，直接進入下一步
               </button>
             )}
 

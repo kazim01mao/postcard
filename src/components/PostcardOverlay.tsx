@@ -180,8 +180,8 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
     setIsGenerating(true);
     setError(null);
 
-    // 🏆 動態取得客製化配置 - 優先使用編號為0的圖片 (config.avatarUrl)
-    const photoUrl = config.avatarUrl || config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
+    // 🏆 動態取得客製化配置 - 使用 config.postcardPhotoUrl
+    const photoUrl = config.postcardPhotoUrl || config.avatarUrl || config.resultUrl || './assets/result.png';
     const textMsg = config.postcardText || config.successMessage || '送上一份誠摯的驚喜，祝你魔法般的一天！';
     const titleText = config.title || '魔法變裝紀念';
 
@@ -361,8 +361,8 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
-  // 優先使用編號為0的圖片 (config.avatarUrl)
-  const photoUrl = config.avatarUrl || config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
+  // 使用 config.postcardPhotoUrl
+  const photoUrl = config.postcardPhotoUrl || config.avatarUrl || config.resultUrl || './assets/result.png';
 
   return (
     <div className="absolute inset-0 z-[100] bg-black/55 backdrop-blur-md flex items-center justify-center p-3.5 pointer-events-auto select-none animate-[fadeIn_0.3s_ease-out] overflow-hidden">

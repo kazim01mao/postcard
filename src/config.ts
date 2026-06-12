@@ -101,16 +101,17 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     finalUrl: '/assets/Y/Y3.jpg',
     postcardPhotoUrl: '/assets/Y/Y4.jpg',
     avatarUrl: '/assets/Y/Y0.png',
-    title: '阿浚~ 为你打打气！',
-    guideTip: '「想象下，呢個時候吉伊心中諗緊乜嘢呢~」',
+    title: '阿浚~ 為你打打氣！',
+    guideTip: '「想象下，吉伊心中諗緊乜嘢呢~」',
     postcardText: `阿浚，
-感恩你恒常传递嘅温暖同关爱，你设身处地为我着想，我亦同样为你守望。正如你所share嘅，小八同吉伊讲，"一起去喔~"
-面对近日嘅堂庆、邨中寻、探望基层等事奉，同埋你嘅返工、长途攞中药之付出，
-想借着呢份心意，浚仔为阿浚打打气！
-祈求主保守你内心享有平安，
-愿主赐福与你！
+感恩你恒常傳遞嘅溫暖同關愛，你設身處地為我著想，我亦同樣為你守望。正如你所分享嘅片，小八同吉伊講，"一起去喔~"
+面對近日嘅堂慶、邨中尋、探望基層等事奉，同埋你嘅返工、長途攞中藥之付出，
+想借著呢份心意，浚仔為阿浚打打氣！
+祈求主保守你內心享有平安，
+願主賜福與你！
 
-"要彼此同心" 罗马书 12:16`,
+"要彼此同心" 羅馬書 12:16
+Jun 12, 2026`,
   },
   l: {
     top: '35%',
@@ -123,18 +124,19 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     finalUrl: '/assets/L/L3.mp4',
     postcardPhotoUrl: '/assets/L/L4.png',
     avatarUrl: '/assets/L/L0.png',
-    title: '雪儿~ 为你打打气！',
+    title: '雪儿~ 為你打打氣！',
     guideTip: '「想象下，呢個畫面襯邊位呢~」',
-    postcardText: `雪儿，
+    postcardText: `雪兒，
 感恩每次相遇！
-平日好好照顾自己，
-用喜乐之心，爱生活、爱兔仔，
-愿主的恩典，
-随住你对生命嘅热爱，
-时刻陪伴住你！
-守护你平安、健康、喜乐~ 
+平日好好照顧自己，
+用喜樂之心，愛生活、愛兔仔，
+願主的恩典，
+隨住你對生命嘅熱愛，
+時刻陪伴住你！
+守護你平安、健康、喜樂~ 
 
-"喜乐的心乃是良药" 箴言 17:22`,
+"喜樂的心乃是良藥" 箴言 17:22
+Jun 12, 2026`,
   },
   // 您可以在这里继续新增其他朋友（栏位选填，没填的会自动套用大预设）：
   /*
