@@ -533,28 +533,38 @@ export default function App() {
           }
 
           let isProcessingFrame = false;
-          let lastVideoTime = -1; // 紀錄上一幀的時間，避免將相同畫面重複送入 MediaPipe 導致 WebAssembly 死鎖
+          let lastProcessTime = Date.now(); // 防死鎖計時器
 
-          const tick = async () => {
+          // 移除 async，改為同步函數，並徹底移除 lastVideoTime 與 currentTime 判斷
+          const tick = () => {
             if (!isTrackingRef.current) return;
 
-            const video = videoElementRef.current;
-            
-            // 確保 currentTime 有改變 (新幀到達) 才發送給 MediaPipe，避免手機端相機更新率低於螢幕更新率時重複處理同一畫面
-            if (!isProcessingFrame && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0 && video.currentTime !== lastVideoTime) {
-              lastVideoTime = video.currentTime;
-              isProcessingFrame = true;
-              try {
-                await faceMesh.send({ image: video });
-              } catch (err: any) {
-                console.warn('FaceMesh send frame error:', err);
-              } finally {
-                isProcessingFrame = false;
-              }
-            }
-            
-            // 將 requestAnimationFrame 放在最後，確保前一幀的邏輯（即使被跳過）不影響下一幀排程
+            // 1. 進入 tick 第一件事就是預約下一幀 (保證主循環絕對不死掉)
             animationFrameIdRef.current = requestAnimationFrame(tick);
+
+            const video = videoElementRef.current;
+
+            // 2. 防禦機制：如果 MediaPipe 在手機端當機超過 500 毫秒，強制解鎖
+            if (isProcessingFrame && Date.now() - lastProcessTime > 500) {
+              console.warn('⚠️ 偵測到算法死鎖，強制解鎖接收新畫面');
+              isProcessingFrame = false;
+            }
+
+            // 3. 只要沒在處理中，且畫面準備好，就直接抽幀發送
+            if (!isProcessingFrame && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+              isProcessingFrame = true;
+              lastProcessTime = Date.now();
+              
+              // 4. 使用 Promise (.then) 而不是 await，讓背景去算，不卡死主線程
+              faceMesh.send({ image: video })
+                .then(() => {
+                  isProcessingFrame = false; // 算完才解鎖
+                })
+                .catch((err: any) => {
+                  console.warn('FaceMesh send frame error:', err);
+                  isProcessingFrame = false; // 出錯也要解鎖，避免永久卡住
+                });
+            }
           };
           
           // 啟動追蹤循環
@@ -776,8 +786,8 @@ export default function App() {
             autoPlay
             muted
             crossOrigin="anonymous"
-            className="absolute pointer-events-none opacity-[0.01] z-0"
-            style={{ width: '10px', height: '10px', top: 0, left: 0 }}
+            className="absolute pointer-events-none z-0"
+            style={{ width: '10px', height: '10px', top: 0, left: 0, opacity: 0.01 }}
           />
 
           {/* 視覺引導框圈 — 僅作為UI邊框呈現，絕不用它來裁剪 Avatar */}
