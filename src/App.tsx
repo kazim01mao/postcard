@@ -747,16 +747,18 @@ export default function App() {
             boxShadow: 'inset 0 4px 12px rgba(97, 85, 60, 0.08)'
           }}
         >
-          {/* 真實鏡頭 — 縮小至 4px 並設 opacity:0.01，視覺上完全不可見但仍被瀏覽器判定為「在視口內渲染」，避免 iOS Safari 省電降頻導致追蹤卡死 */}
+          {/* 真實鏡頭 — 完全渲染但不透明度屬性，確保 iOS Safari 判定影片「正在視口內播放」以維持硬體解碼器持續輸出幀資料 */}
           <video
             ref={videoElementRef}
             playsInline
             autoPlay
             muted
             crossOrigin="anonymous"
-            className="pointer-events-none"
-            style={{ width: '4px', height: '4px', opacity: 0.01, objectFit: 'cover' }}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
+
+          {/* 不透明遮蓋層 — 將真實鏡頭完全遮擋，確保用戶無法看見真實面容；必須位於 <video> 之後、avatar 之前，利用 DOM 順序實現 z 軸分層 */}
+          <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none" />
 
           {/* 鏡像 3D 高精度動態捕捉替身容器 — 分層架構：外層居中定位（無 calc），內層純 px 跟蹤偏移（無 calc），徹底避免手機端 calc() inside transform 的相容性 bug */}
           {/* Layer A: 純居中容器，僅負責將左上角移到正中心 */}
