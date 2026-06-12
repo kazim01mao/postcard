@@ -7,49 +7,49 @@ import { AlignmentConfig } from './types';
 
 /**
  * ==========================================
- * 🔥 參數化配置區 (ALIGNMENT_CONFIG)
+ * 🔥 参数化配置区 (ALIGNMENT_CONFIG)
  * ==========================================
- * 您可以隨意更換前景遮罩圖片 (./assets/mask.png)。如果您的 mask.png 
- * 的人臉透明鏤空位置、大小不同，請直接在此調整下方的百分比/像素值。
+ * 您可以随意更换前景遮罩图片 (./assets/mask.png)。如果您的 mask.png 
+ * 的人脸透明镂空位置、大小不同，请直接在此调整下方的百分比/像素值。
  * 
- * 網頁的視覺輔助虛線框、MediaPipe 的判定區域、以及動態挖空遮罩，
- * 都會 100% 動態跟隨此配置自動生成。
+ * 网页的视觉辅助虚线框、MediaPipe 的判定区域、以及动态挖空遮罩，
+ * 都会 100% 动态跟随此配置自动生成。
  */
 export const ALIGNMENT_CONFIG: AlignmentConfig = {
-  top: '35%',          // 對齊區域中心點距離頂部的百分比
-  left: '30%',         // 將識別區域設定在畫面偏左側
-  width: '180px',      // 對齊區域的寬度 (可設 px 或 %)
-  height: '180px',     // 對齊區域的高度 (可設 px 或 %)
-  borderRadius: '50%', // 圓角對界：'50%' 代表圓形/橢圓洞口
-  title: '專屬明信片', // 預設首頁大標題
-  subtitle: '專屬明信片', // 預設首頁副標題
-  buttonText: '查收這份禮物', // 預設主導按鈕文字
-  successMessage: '感恩這份奇妙的相遇，獻上我最溫暖的祝福！', // 預設祝賀賀詞
-  initialUrl: '/assets/Y/Y1.jpg', // 最初呈現 initial
-  resultUrl: '/assets/Y/Y2.png',   // 然後呈現 result
-  finalUrl: '/assets/Y/Y3.jpg',     // 然後呈現 final
-  avatarUrl: '/assets/Y/Y0.png',    // 隱私保護替身頭像圖
-  postcardPhotoUrl: '/assets/Y/Y4.jpg', // 最後生成的專屬明信片核心照片 cardpic
-  postcardText: `感恩這份奇妙的相遇，
-獻上我最溫暖的祝福！
-願你的每一步都充滿陽光。`, // 預設明信片字句
-  guideTip: '「請將面部放入框線內，用於代入角色」', // 引導指示提示字
+  top: '35%',          // 对齐区域中心点距离顶部的百分比
+  left: '30%',         // 将对齐区域设定在画面偏左侧
+  width: '180px',      // 对齐区域的宽度 (可设 px 或 %)
+  height: '180px',     // 对齐区域的高度 (可设 px 或 %)
+  borderRadius: '50%', // 圆角对界：'50%' 代表圆形/椭圆洞口
+  title: '专属明信片', // 预设首页大标题
+  subtitle: '专属明信片', // 预设首页副标题
+  buttonText: '查收这份礼物', // 预设主导按钮文字
+  successMessage: '感恩这份奇妙的相遇，献上我最温暖的祝福！', // 预设祝贺贺词
+  initialUrl: '/assets/Y/Y1.jpg', // 最初呈现 initial
+  resultUrl: '/assets/Y/Y2.jpg',   // 然后呈现 result (实际文件是 jpg)
+  finalUrl: '/assets/Y/Y3.jpg',     // 然后呈现 final
+  avatarUrl: '/assets/Y/Y0.png',    // 隐私保护替身头像图
+  postcardPhotoUrl: '/assets/Y/Y4.jpg', // 最后生成的专属明信片核心照片 cardpic
+  postcardText: `感恩这份奇妙的相遇，
+献上我最温暖的祝福！
+愿你的每一步都充满阳光。`, // 预设明信片字句
+  guideTip: '「请将面部放入框线内，用于代入角色」', // 引导指示提示字
 };
 
 /**
  * ==========================================
- * 👥 朋友預設定檔配置區 (FRIEND_PROFILES)
+ * 👥 朋友预设定档配置区 (FRIEND_PROFILES)
  * ==========================================
- * 您可以在這裡為不同的朋友預先設定好個別的：
- * 1. 鏤空洞口位置與大小 (top, left, width, height, borderRadius)
- * 2. 朋友專屬的 initial.png/mp4、result.png、final.mp4/png 檔案檔名（放在 /assets 中）
- * 3. 朋友專屬的歡迎標題、副標題、按鈕文字、以及對齊後的祝賀賀詞！
+ * 您可以在这里为不同的朋友预先设定好个别的：
+ * 1. 镂空洞口位置与大小 (top, left, width, height, borderRadius)
+ * 2. 朋友专属的 initial.png/mp4、result.png、final.mp4/png 文件档名（放在 /assets 中）
+ * 3. 朋友专属的欢迎标题、副标题、按钮文字、以及对齐后的祝贺贺词！
  * 
  * 💡 如何使用：
- * 假設朋友叫 Alice：
- * 1. 在此處新增 alice 設定檔
- * 2. 您可於 /assets 資料夾，上傳 `alice_initial.png`、`alice_result.png` 和 `alice_final.mp4`
- * 3. 分享連結給 Alice 時，網址後面加上 `?friend=alice`
+ * 假设朋友叫 Alice：
+ * 1. 在此处新增 alice 设定档
+ * 2. 您可于 /assets 文件夹，上传 `alice_initial.png`、`alice_result.png` 和 `alice_final.mp4`
+ * 3. 分享连结给 Alice 时，网址后面加上 `?friend=alice`
  */
 export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
   alice: {
@@ -61,14 +61,14 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     initialUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800',
     resultUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800&h=1200',
     finalUrl: 'https://assets.mixkit.co/videos/preview/mixkit-slow-motion-of-falling-glitter-41595-large.mp4',
-    title: '給 Alice 的魔法驚喜',
-    subtitle: '對齊你的臉庞 🌟 看看發生什麼',
-    buttonText: '查收這份禮物',
-    successMessage: '親愛的 Alice，祝你生日快樂！希望這份魔法變裝禮物能帶給你滿滿的歡笑！🎂🎉',
-    postcardPhotoUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&q=80&w=800&h=1200', // Alice 的專屬明信片照片 (請上傳到 /assets/alice_postcard.png)
-    postcardText: `致親愛的 Alice：
-願這份星光魔法常伴你左右，
-每天都順心如意，
+    title: '给 Alice 的魔法惊喜',
+    subtitle: '对齐你的脸庞 🌟 看看发生什么',
+    buttonText: '查收这份礼物',
+    successMessage: '亲爱的 Alice，祝你生日快乐！希望这份魔法变装礼物能带给你满满的欢笑！🎂🎉',
+    postcardPhotoUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&q=80&w=800&h=1200', // Alice 的专属明信片照片 (请上传到 /assets/alice_postcard.png)
+    postcardText: `致亲爱的 Alice：
+愿这份星光魔法常伴你左右，
+每天都顺心如意，
 生活甜如蜜！🌸✨`,
   },
   bob: {
@@ -76,19 +76,19 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     left: '48%',
     width: '220px',
     height: '280px',
-    borderRadius: '24px', // 圓角矩形鏤空
+    borderRadius: '24px', // 圆角矩形镂空
     initialUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800',
     resultUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800&h=1200',
     finalUrl: 'https://assets.mixkit.co/videos/preview/mixkit-retro-futuristic-tunnel-loop-42866-large.mp4',
-    title: 'Bob 的魔法冒險隊',
-    subtitle: '啟動認證 Face ID 進入異世界',
-    buttonText: '啟動變身密碼',
-    successMessage: 'Bob！恭喜完成今日冒險！這是屬於你的榮譽變身成果！🎖️🔥',
-    postcardPhotoUrl: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=800&h=1200', // Bob 的專屬明信片照片 (請上傳到 /assets/bob_postcard.png)
-    postcardText: `冒險家 Bob：
-祝你在全新的一年裡，
-劈波斬浪，勇往直前！
-這張魔法明信片記下你帥氣的瞬間！🦸‍♂️🔥`,
+    title: 'Bob 的魔法冒险队',
+    subtitle: '启动认证 Face ID 进入异世界',
+    buttonText: '启动变身密码',
+    successMessage: 'Bob！恭喜完成今日冒险！这是属于你的荣誉变身成果！🎖️🔥',
+    postcardPhotoUrl: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=800&h=1200', // Bob 的专属明信片照片 (请上传到 /assets/bob_postcard.png)
+    postcardText: `冒险家 Bob：
+祝你在全新的一年里，
+劈波斩浪，勇往直前！
+这张魔法明信片记下你帅气的瞬间！🦸‍♂️🔥`,
   },
   y: {
     top: '35%',
@@ -97,20 +97,20 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     height: '180px',
     borderRadius: '50%',
     initialUrl: '/assets/Y/Y1.jpg',
-    resultUrl: '/assets/Y/Y2.png',
+    resultUrl: '/assets/Y/Y2.jpg',
     finalUrl: '/assets/Y/Y3.jpg',
     postcardPhotoUrl: '/assets/Y/Y4.jpg',
     avatarUrl: '/assets/Y/Y0.png',
-    title: '阿浚~ 為你打打氣！',
-    guideTip: '「請將面部放入框線內，用於代入角色」',
+    title: '阿浚~ 为你打打气！',
+    guideTip: '「请将面部放入框线内，用于代入角色」',
     postcardText: `阿浚，
-感恩你恆常傳遞嘅溫暖同關愛，你設身處地為我著想，我亦同樣為你守望。正如你所share嘅，小八同吉伊講，“一起去喔~”
-面對近日嘅堂慶、邨中尋、探望基層等事奉，同埋你嘅返工、長途攞中藥之付出，
-想藉著呢份心意，浚仔為阿浚打打氣！
-祈求主保守你內心享有平安，
-願主賜福與你！
+感恩你恒常传递嘅温暖同关爱，你设身处地为我着想，我亦同样为你守望。正如你所share嘅，小八同吉伊讲，"一起去喔~"
+面对近日嘅堂庆、邨中寻、探望基层等事奉，同埋你嘅返工、长途攞中药之付出，
+想借着呢份心意，浚仔为阿浚打打气！
+祈求主保守你内心享有平安，
+愿主赐福与你！
 
-"要彼此同心" 羅馬書 12:16`,
+"要彼此同心" 罗马书 12:16`,
   },
   l: {
     top: '35%',
@@ -123,20 +123,20 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     finalUrl: '/assets/L/L3.mp4',
     postcardPhotoUrl: '/assets/L/L4.png',
     avatarUrl: '/assets/L/L0.png',
-    title: '雪兒~ 為你打打氣！',
-    guideTip: '「請將面部放入框線內，用於代入角色」',
-    postcardText: `雪兒，
+    title: '雪儿~ 为你打打气！',
+    guideTip: '「请将面部放入框线内，用于代入角色」',
+    postcardText: `雪儿，
 感恩每次相遇！
-平日好好照顧自己，
-用喜樂之心，愛生活、愛兔仔，
-願主的恩典，
-隨住你對生命嘅熱愛，
-時刻陪伴住你！
-守護你平安、健康、喜樂~ 
+平日好好照顾自己，
+用喜乐之心，爱生活、爱兔仔，
+愿主的恩典，
+随住你对生命嘅热爱，
+时刻陪伴住你！
+守护你平安、健康、喜乐~ 
 
-"喜樂的心乃是良藥" 箴言 17:22`,
+"喜乐的心乃是良药" 箴言 17:22`,
   },
-  // 您可以在這裡繼續新增其他朋友（欄位選填，沒填的會自動套用大預設）：
+  // 您可以在这里继续新增其他朋友（栏位选填，没填的会自动套用大预设）：
   /*
   jack: {
     top: '35%',
@@ -147,24 +147,24 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     initialUrl: './assets/jack_initial.png',
     resultUrl: './assets/jack_result.png',
     finalUrl: './assets/jack_final.mp4',
-    title: 'Jack 的專屬變裝',
-    successMessage: '嗨 Jack，這是為你量身打造的特別魔法！',
+    title: 'Jack 的专属变装',
+    successMessage: '嗨 Jack，这是为你量身打造的特别魔法！',
   }
   */
 };
 
 /**
- * 動態解析目前網頁連結的對齊設定。
- * 支援兩種動態調整方式：
- * 1. 精確 URL 參數：?top=30%&left=50%&width=200px&height=200px&radius=50%
- * 2. 朋友專屬預設：?friend=alice 或 ?u=bob
+ * 动态解析目前网页连结的对齐设定。
+ * 支援两种动态调整方式：
+ * 1. 精确 URL 参数：?top=30%&left=50%&width=200px&height=200px&radius=50%
+ * 2. 朋友专属预设：?friend=alice 或 ?u=bob
  */
 export function getDynamicAlignmentConfig(): AlignmentConfig {
   if (typeof window === 'undefined') return ALIGNMENT_CONFIG;
 
   const params = new URLSearchParams(window.location.search);
   
-  // 優先級 1: 檢查是否有朋友個別預設
+  // 优先级 1: 检查是否有朋友个别预设
   const friendName = params.get('friend') || params.get('u');
   let baseConfig = { ...ALIGNMENT_CONFIG };
 
@@ -175,7 +175,7 @@ export function getDynamicAlignmentConfig(): AlignmentConfig {
     };
   }
 
-  // 優先級 2: 檢查是否有直接傳入個別參數覆蓋 (更具彈性)
+  // 优先级 2: 检查是否有直接传入个别参数覆盖 (更具弹性)
   const topParam = params.get('top');
   const leftParam = params.get('left');
   const widthParam = params.get('width');
@@ -192,8 +192,8 @@ export function getDynamicAlignmentConfig(): AlignmentConfig {
 }
 
 /**
- * 偵錯模式開關 (DEBUG_MODE)
- * - 當為 true 時：對齊框變為亮紅色，並允許您直接用鼠標/手指「拖拽、拉伸」來微調位置。
- * - 螢幕底部會浮現一個「實時配置產生器」面板，您可以複製最新的配置直接貼回上方，大簡化微調流程！
+ * 侦错模式开关 (DEBUG_MODE)
+ * - 当为 true 时：对齐框变为亮红色，并允许您直接用鼠标/手指「拖拽、拉伸」来微调位置。
+ * - 萤幕底部会浮现一个「即时配置产生器」面板，您可以复制最新的配置直接贴回上方，大简化微调流程！
  */
 export const DEBUG_MODE_DEFAULT = true;

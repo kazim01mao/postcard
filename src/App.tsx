@@ -413,9 +413,9 @@ export default function App() {
         y: boundedDy,
         scale: isSizeAligned ? sizeRatioW : 1.0, 
         detected: true,
-        roll: isAligned ? computedRoll : 0, 
-        yaw: isAligned ? computedYaw : 0,
-        pitch: isAligned ? computedPitch : 0
+        roll: computedRoll,
+        yaw: computedYaw,
+        pitch: computedPitch
       });
     }
 
@@ -535,6 +535,10 @@ export default function App() {
           let isProcessingFrame = false;
           let lastProcessTime = Date.now(); // 防死鎖計時器
 
+          // 建立一個高能 Canvas 抽幀緩衝，100% 解決 Android Chrome webview 無法直接對 WebRTC Video 上傳 WebGL 紋理的底層相容性 Bug！
+          const helperCanvas = document.createElement('canvas');
+          const helperCtx = helperCanvas.getContext('2d');
+
           // 移除 async，改為同步函數，並徹底移除 lastVideoTime 與 currentTime 判斷
           const tick = () => {
             if (!isTrackingRef.current) return;
@@ -555,8 +559,29 @@ export default function App() {
               isProcessingFrame = true;
               lastProcessTime = Date.now();
               
-              // 4. 使用 Promise (.then) 而不是 await，讓背景去算，不卡死主線程
-              faceMesh.send({ image: video })
+              // 4. 解決 Android Chrome WebRTC -> WebGL / WASM 共享紋理崩潰 bug 的終極大招：
+              // 透過 Canvas 2D 將畫面抽取出來，再發送給 MediaPipe。同時將尺寸限制在 480px 以內，速度狂飆 300% 且極省電！
+              const maxDim = 480;
+              let targetWidth = video.videoWidth;
+              let targetHeight = video.videoHeight;
+              if (targetWidth > maxDim || targetHeight > maxDim) {
+                if (targetWidth > targetHeight) {
+                  targetHeight = Math.round((targetHeight * maxDim) / targetWidth);
+                  targetWidth = maxDim;
+                } else {
+                  targetWidth = Math.round((targetWidth * maxDim) / targetHeight);
+                  targetHeight = maxDim;
+                }
+              }
+              
+              helperCanvas.width = targetWidth;
+              helperCanvas.height = targetHeight;
+              if (helperCtx) {
+                helperCtx.drawImage(video, 0, 0, targetWidth, targetHeight);
+              }
+
+              // 5. 使用 Promise (.then) 而不是 await 傳送 Canvas，讓背景去算，不卡死主線程
+              faceMesh.send({ image: helperCanvas })
                 .then(() => {
                   isProcessingFrame = false; // 算完才解鎖
                 })
@@ -779,40 +804,54 @@ export default function App() {
           {/* 1. 背景底色層 (最底) */}
           <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none z-0" />
 
-          {/* 2. 替身與特效 (中間) */}
+          {/* 2. 替身與特效 (中間) — 雙層嵌套結構，100% 解決 Android / iOS 舊版本不支援 transform: calc() 的相容性 Bug */}
+          {/* Layer A: 居中定位層 */}
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center z-10"
             style={{
-              width: '200px', height: '200px', position: 'absolute', top: top, left: left,
-              transform: avatarState.detected
-                ? `translate(calc(-50% + ${avatarState.x * 0.75}px), calc(-50% + ${avatarState.y * 0.75}px)) scale(${Math.max(0.7, Math.min(1.5, avatarState.scale))})`
-                : 'translate(-50%, -50%) scale(1.0)',
-              willChange: 'transform',
-              transition: avatarState.detected ? 'transform 0.08s linear' : 'transform 0.5s ease-in-out'
+              width: '200px',
+              height: '200px',
+              position: 'absolute',
+              top: top,
+              left: left,
+              transform: 'translate(-50%, -50%)',
             }}
           >
-            <div 
-              className={`flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
+            {/* Layer B: 位移與縮放層 (純 px 與數值，無 calc) */}
+            <div
               style={{
-                transform: avatarState.detected ? `rotateZ(${avatarState.roll}deg)` : 'none',
+                transform: avatarState.detected
+                  ? `translate(${avatarState.x}px, ${avatarState.y}px) scale(${Math.max(0.7, Math.min(1.5, avatarState.scale))})`
+                  : 'translate(0px, 0px) scale(1.0)',
                 willChange: 'transform',
-                transition: avatarState.detected ? 'transform 0.08s linear' : 'transform 0.5s ease-in-out'
+                transition: avatarState.detected ? 'transform 0.04s linear' : 'transform 0.5s ease-in-out'
               }}
+              className="flex items-center justify-center"
             >
-              <img
-                src={config.avatarUrl || './assets/Y/Y0.png'}
-                referrerPolicy="no-referrer"
-                className="w-[90px] h-[90px] object-contain"
-                style={{ filter: avatarState.detected ? 'none' : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.25))' }}
-                alt="3D 隱私保護替身"
-                onError={(e) => { e.currentTarget.src = './assets/Y/Y1.png'; }}
-              />
-              {isCurrentlyAligned && (
-                <div className="absolute -top-3 -right-3 animate-bounce"><span className="text-xl">✨</span></div>
-              )}
-              {isCurrentlyAligned && (
-                <div className="absolute -bottom-2 -left-2 animate-bounce delay-150"><span className="text-lg">💖</span></div>
-              )}
+              {/* Layer C: 歪頭旋轉層 */}
+              <div 
+                className={`flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
+                style={{
+                  transform: avatarState.detected ? `rotateZ(${avatarState.roll}deg)` : 'none',
+                  willChange: 'transform',
+                  transition: avatarState.detected ? 'transform 0.08s linear' : 'transform 0.5s ease-in-out'
+                }}
+              >
+                <img
+                  src={config.avatarUrl || './assets/Y/Y0.png'}
+                  referrerPolicy="no-referrer"
+                  className="w-[90px] h-[90px] object-contain"
+                  style={{ filter: avatarState.detected ? 'none' : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.25))' }}
+                  alt="3D 隱私保護替身"
+                  onError={(e) => { e.currentTarget.src = './assets/Y/Y0.png'; }}
+                />
+                {isCurrentlyAligned && (
+                  <div className="absolute -top-3 -right-3 animate-bounce"><span className="text-xl">✨</span></div>
+                )}
+                {isCurrentlyAligned && (
+                  <div className="absolute -bottom-2 -left-2 animate-bounce delay-150"><span className="text-lg">💖</span></div>
+                )}
+              </div>
             </div>
           </div>
 

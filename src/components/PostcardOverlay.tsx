@@ -193,9 +193,6 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
-        // 設計一個極具黃金比例的明信片尺寸 (800 x 1100 像素)
-        canvas.width = 800;
-        canvas.height = 1100;
         
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -203,18 +200,36 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         }
 
         // ===============================================
+        // 🖼️ 步驟 0：預先計算文本行數，決定 Canvas 高度
+        // ===============================================
+        const tmpFont = 'bold 24px "Inter", "Microsoft JhengHei", sans-serif';
+        ctx.font = tmpFont;
+        const limit = 18; // 每行字數（縮小以確保中文字不溢出）
+        const lines: string[] = [];
+        for (let i = 0; i < textMsg.length; i += limit) {
+          lines.push(textMsg.substring(i, i + limit));
+        }
+        // 動態高度：照片區域 (到 y=694) + 裝飾區 (到 y=740) + 文字區 (起始 y=810，每行 48px) + 底部留白 60px
+        const textBlockHeight = lines.length * 48 + 60;
+        const canvasHeight = Math.max(1100, 810 + textBlockHeight);
+        canvas.width = 800;
+        canvas.height = canvasHeight;
+        // 重新設定字體（因 reset canvas size 會清除字體設定）
+        ctx.font = tmpFont;
+
+        // ===============================================
         // 🎨 步驟 1：繪製手工紙米白質感與魔法微光
         // ===============================================
         ctx.fillStyle = '#FAF7F0'; // 精緻手工紙米白
-        ctx.fillRect(0, 0, 800, 1100);
+        ctx.fillRect(0, 0, 800, canvasHeight);
 
         // 溫潤陰影漸層，營造微拱手工質感
-        const borderGrad = ctx.createRadialGradient(400, 550, 100, 400, 550, 800);
+        const borderGrad = ctx.createRadialGradient(400, canvasHeight / 2, 100, 400, canvasHeight / 2, 800);
         borderGrad.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
         borderGrad.addColorStop(0.7, 'rgba(235, 225, 205, 0.15)');
         borderGrad.addColorStop(1, 'rgba(215, 201, 178, 0.38)');
         ctx.fillStyle = borderGrad;
-        ctx.fillRect(0, 0, 800, 1100);
+        ctx.fillRect(0, 0, 800, canvasHeight);
 
         // ===============================================
         // 🖼️ 步驟 2：渲染照片 (居中裁切適配，完美保留，營造油墨印刷感)
@@ -287,7 +302,7 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         ctx.fillText('✦', 400, 722);
 
         // 溫暖金箔字句印刷
-        const textGrad = ctx.createLinearGradient(0, 810, 0, 980);
+        const textGrad = ctx.createLinearGradient(0, 810, 0, 810 + textBlockHeight);
         textGrad.addColorStop(0, '#9e7520');
         textGrad.addColorStop(1, '#614914');
         
@@ -295,14 +310,8 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         ctx.font = 'bold 24px "Inter", "Microsoft JhengHei", sans-serif';
         ctx.letterSpacing = '4px';
 
-        const lines: string[] = [];
-        const limit = 22; // 每行大約字數
-        for (let i = 0; i < textMsg.length; i += limit) {
-          lines.push(textMsg.substring(i, i + limit));
-        }
-
         lines.forEach((line, index) => {
-          ctx.fillText(line, 400, 825 + index * 48);
+          ctx.fillText(line, 400, 835 + index * 48);
         });
 
         // 轉換為 JPEG 資料，壓縮率為 93% 保持超高品質又能快速儲存
@@ -374,11 +383,17 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
               </div>
             ) : error ? (
               <span className="text-xs text-red-400 p-4 text-center">{error}</span>
+            ) : generatedImgSrc ? (
+              <img
+                src={generatedImgSrc}
+                alt="你的專屬明信片"
+                className="w-full h-full object-contain"
+              />
             ) : (
               <img
                 src={photoUrl}
                 alt="Postcard Illustration"
-                className="w-full h-full object-cover mix-blend-multiply opacity-95 filter saturate-[0.98] brightness-[0.98]"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
             )}
