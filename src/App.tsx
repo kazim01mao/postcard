@@ -386,8 +386,9 @@ export default function App() {
     const target = getAlignmentBoxPixels();
     if (!target) return;
 
-    // 計算虛擬替身偏移量 (鏡像處理，X 方向取反以便與真人的實體左右動作維持一致)
-    const rawDx = target.centerX - faceCenter.x; // 反轉 X 方向，使其與相機畫面一致
+    // 計算虛擬替身偏移量
+    // faceCenter.x 增大代表用戶向右移動 (已經在前面處理過正確映射)，所以要往右偏移 (正值)
+    const rawDx = faceCenter.x - target.centerX;
     const rawDy = faceCenter.y - target.centerY;
 
     // 比對判斷誤差百分比 - 根據反饋再度大幅放寬，讓用戶更容易對齊
@@ -408,19 +409,27 @@ export default function App() {
 
     // 更新替身動態座標與縮放、傾斜與偏轉
     // 在行動端上，直接使用計算出的偏移量，並加上簡單的邊界限制
-    const maxDx = target.width * 1.5;
-    const maxDy = target.height * 1.5;
-    const boundedDx = Math.max(-maxDx, Math.min(maxDx, rawDx));
-    const boundedDy = Math.max(-maxDy, Math.min(maxDy, rawDy));
+    // 放寬邊界到 2 倍寬度，避免輕微移動就被卡住
+    const maxDx = target.width * 2.0;
+    const maxDy = target.height * 2.0;
+    
+    // 如果 isMobilePortrait 為 true，代表發生了旋轉
+    // 我們需要將偏移量對應旋轉，確保視覺上的移動一致
+    let finalDx = rawDx;
+    let finalDy = rawDy;
+    
+    // 將修正後的結果限制在最大範圍內，保證即使算法偏離也不會消失
+    const boundedDx = Math.max(-maxDx, Math.min(maxDx, finalDx));
+    const boundedDy = Math.max(-maxDy, Math.min(maxDy, finalDy));
 
     setAvatarState({
       x: boundedDx,
       y: boundedDy,
-      scale: sizeRatioW || 1.0, 
+      scale: isSizeAligned ? sizeRatioW : 1.0, 
       detected: true,
-      roll: computedRoll, 
-      yaw: computedYaw,
-      pitch: computedPitch
+      roll: isAligned ? computedRoll : 0, 
+      yaw: isAligned ? computedYaw : 0,
+      pitch: isAligned ? computedPitch : 0
     });
 
     if (isAligned) {
@@ -525,10 +534,14 @@ export default function App() {
         // 等待視頻真正準備好再開始追蹤
         const videoElement = videoElementRef.current;
         const startTracking = async () => {
-          // 等待視頻元素有可播放的狀態
+          // 等待視頻元素有可播放的狀態 (加超時保護，避免無痕模式下永遠掛起)
           if (videoElement.readyState < 2) {
-            await new Promise(resolve => {
-              videoElement.addEventListener('canplay', resolve, { once: true });
+            await new Promise((resolve, reject) => {
+              const timer = setTimeout(() => reject(new Error('Video canplay timeout')), 5000);
+              videoElement.addEventListener('canplay', () => {
+                clearTimeout(timer);
+                resolve(true);
+              }, { once: true });
             });
           }
 
