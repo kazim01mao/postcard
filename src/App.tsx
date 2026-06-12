@@ -758,100 +758,94 @@ export default function App() {
 
         {/* ==========================================
             Layer 3：相機影片與隱私替身 (Privacy-first Animated Avatar)
-            真實相機影片設為透明 (opacity: 0)，僅在背景做人臉計算。
-            畫面實時渲染一個風格相符的手繪風卡通貓替身，鏡像跟隨用戶移動。
             ========================================== */}
         <div 
-          className="absolute z-15 transition-opacity duration-1000 ease-in-out overflow-hidden"
+          className="absolute inset-0 z-15 transition-opacity duration-1000 ease-in-out"
           style={{ 
             opacity: (phase === AppPhase.ACTIVE || phase === AppPhase.LOADING || phase === AppPhase.ALIGNED) ? 1 : 0,
-            top: top,
-            left: left,
-            width: width,
-            height: height,
-            borderRadius: borderRadius,
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: '#fbf9f4', // 溫潤柔和的卡片背景色底
-            border: '2px solid rgba(223, 201, 155, 0.45)',
-            boxShadow: 'inset 0 4px 12px rgba(97, 85, 60, 0.08)'
+            backgroundColor: '#fbf9f4' // 保持溫潤柔和的卡片背景色底
           }}
         >
-          {/* 不透明遮蓋層 — 位於 video 下方 (DOM 順序在前)，先渲染背景色 */}
-          <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none" />
+          {/* 不透明遮蓋層 — 確保用戶真實面容100%不顯示，保護隱私 */}
+          <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none z-10" />
 
-          {/* 真實鏡頭 — 疊在遮蓋層上方，使用 opacity-[0.01] 欺騙 iOS Safari 的「視訊遮蔽暫停」機制，確保硬體解碼器持續輸出幀資料供 MediaPipe 使用 */}
+          {/* 真實鏡頭 — 使用隱形尺寸欺騙 iOS Safari，確保硬體解碼器持續輸出幀資料 */}
           <video
             ref={videoElementRef}
             playsInline
             autoPlay
             muted
             crossOrigin="anonymous"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-[0.01]"
+            className="absolute pointer-events-none opacity-[0.01] z-0"
+            style={{ width: '10px', height: '10px', top: 0, left: 0 }}
           />
 
-          {/* 鏡像 3D 高精度動態捕捉替身容器 — 分層架構：外層居中定位（無 calc），內層純 px 跟蹤偏移（無 calc），徹底避免手機端 calc() inside transform 的相容性 bug */}
-          {/* Layer A: 純居中容器，僅負責將左上角移到正中心 */}
+          {/* 視覺引導框圈 — 僅作為UI邊框呈現，絕不用它來裁剪 Avatar */}
           <div 
-            className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center"
+            className="absolute pointer-events-none transition-all duration-300"
             style={{
-              width: '100%',
-              height: '100%',
+              top: top,
+              left: left,
+              width: width,
+              height: height,
+              borderRadius: borderRadius,
               transform: 'translate(-50%, -50%)',
+              border: '2px dashed rgba(223, 201, 155, 0.65)',
+              boxShadow: '0 0 0 9999px rgba(251, 249, 244, 0.4)' // 柔和的周邊遮罩
+            }}
+          />
+
+          {/* 獨立的替身動態捕捉容器 —— 擺脫父級尺寸限制，在全螢幕(或整個相機視窗)中自由移動 */}
+          <div 
+            className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center z-20"
+            style={{
+              width: '200px',  // 給替身足夠的活動寬度
+              height: '200px', // 給替身足夠的活動高度
+              // 基於 config 中設定的中央坐標（如 left: 50%, top: 50%）作為運動起點
+              position: 'absolute',
+              top: top,
+              left: left,
+              // 純 px 偏移跟隨，徹底隔絕物理裁剪，平滑度提高
+              transform: avatarState.detected
+                ? `translate(calc(-50% + ${avatarState.x * 0.75}px), calc(-50% + ${avatarState.y * 0.75}px)) scale(${Math.max(0.7, Math.min(1.5, avatarState.scale))})`
+                : 'translate(-50%, -50%) scale(1.0)',
+              willChange: 'transform',
+              transition: avatarState.detected ? 'transform 0.08s linear' : 'transform 0.5s ease-in-out'
             }}
           >
-            {/* Layer B: 人臉追蹤偏移容器，僅使用純 px 值 translate，不包含 calc() */}
-            <div
+            {/* 旋轉容器 —— 負責隨真人歪頭 */}
+            <div 
+              className={`flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
               style={{
-                transform: avatarState.detected
-                  ? `translate(${avatarState.x * 0.8}px, ${avatarState.y * 0.8}px) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
-                  : 'translate(0px, 0px) scale(1.0)',
-                willChange: avatarState.detected ? 'transform' : 'auto',
-                transition: 'transform 0.1s linear' // 縮短動畫時間，讓跟隨更平滑
+                transform: avatarState.detected ? `rotateZ(${avatarState.roll}deg)` : 'none',
+                willChange: 'transform',
+                transition: avatarState.detected ? 'transform 0.08s linear' : 'transform 0.5s ease-in-out'
               }}
-              className="flex items-center justify-center"
             >
-              {/* Layer C: 旋轉容器，僅負責 rotateZ 歪頭跟隨 */}
-              <div 
-                className={`flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
+              <img
+                src={config.avatarUrl || './assets/Y/Y0.png'}
+                referrerPolicy="no-referrer"
+                className="w-[90px] h-[90px] object-contain"
                 style={{
-                  transform: avatarState.detected
-                    ? `rotateZ(${avatarState.roll}deg)`
-                    : 'none',
-                  willChange: avatarState.detected ? 'transform' : 'auto',
-                  transition: 'transform 0.1s linear'
+                  filter: avatarState.detected ? 'none' : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.25))'
                 }}
-              >
-                {/* 卡通替身 Y0 圖片 — 手機端追蹤時移除 filter 避免觸發昂貴重繪 */}
-                <div style={{ filter: avatarState.detected ? 'none' : undefined }}>
-                  <img
-                    src={config.avatarUrl || './assets/Y/Y0.png'}
-                    referrerPolicy="no-referrer"
-                    className="w-[84px] h-[84px] object-contain"
-                    style={{
-                      filter: avatarState.detected
-                        ? 'none'
-                        : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.35))'
-                    }}
-                    alt="3D 隱私保護替身"
-                    onError={(e) => {
-                      console.warn('Avatar image fail, fallback loading Y1');
-                      e.currentTarget.src = config.initialUrl || './assets/Y/Y1.png';
-                    }}
-                  />
-                  
-                  {/* 狀態一：當完美對齊時，呈現在替身旁邊的閃爍小愛心/小閃星 */}
-                  {isCurrentlyAligned && (
-                    <div className="absolute -top-3 -right-3 animate-bounce">
-                      <span className="text-xl">✨</span>
-                    </div>
-                  )}
-                  {isCurrentlyAligned && (
-                    <div className="absolute -bottom-2 -left-2 animate-bounce delay-150">
-                      <span className="text-lg">💖</span>
-                    </div>
-                  )}
+                alt="3D 隱私保護替身"
+                onError={(e) => {
+                  e.currentTarget.src = './assets/Y/Y1.png';
+                }}
+              />
+              
+              {/* 特效元素 */}
+              {isCurrentlyAligned && (
+                <div className="absolute -top-3 -right-3 animate-bounce">
+                  <span className="text-xl">✨</span>
                 </div>
-              </div>
+              )}
+              {isCurrentlyAligned && (
+                <div className="absolute -bottom-2 -left-2 animate-bounce delay-150">
+                  <span className="text-lg">💖</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -350,8 +350,8 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
       {/* THREE.JS 粒子特效背景 */}
       <ThreeParticleBackground />
 
-      {/* 🔮 珍貴的圓角紙質明信片 (無彈窗外加框架，它自身就是明信片) */}
-      <div className="w-[330px] h-[540px] bg-[#FAF7F0] rounded-[24px] border border-[#e3dac9] shadow-[0_24px_55px_rgba(50,45,35,0.28)] flex flex-col justify-between relative overflow-hidden animate-scaleUp z-10">
+      {/* 🔮 珍貴的圓角紙質明信片 (無彈窗外加框架，它自身就是明信片) — 自適應高度，文字過多時可捲動 */}
+      <div className="w-[330px] max-h-[85vh] bg-[#FAF7F0] rounded-[24px] border border-[#e3dac9] shadow-[0_24px_55px_rgba(50,45,35,0.28)] flex flex-col justify-between relative overflow-hidden animate-scaleUp z-10">
         
         {/* 右上角精緻、壓印風格的圓形返回按鈕 */}
         <button
@@ -362,11 +362,11 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
           <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
         </button>
 
-        {/* 內頁：包含插畫與金箔文字 */}
-        <div className="flex-1 flex flex-col pt-6 px-6">
+        {/* 內頁：包含插畫與金箔文字 — 文字過多時此區域可垂直捲動 */}
+        <div className="flex-1 flex flex-col pt-6 px-6 overflow-y-auto min-h-0">
           
           {/* 明信片手繪插畫：直接印刷在手工紙上的卡通貓吃壽司插畫 */}
-          <div className="w-full aspect-square rounded-xl overflow-hidden border border-[#eeddbb]/30 shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-stone-100 flex items-center justify-center relative mt-3">
+          <div className="w-full aspect-square rounded-xl overflow-hidden border border-[#eeddbb]/30 shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-stone-100 flex items-center justify-center relative mt-3 shrink-0">
             {isGenerating ? (
               <div className="flex flex-col items-center gap-1.5 py-6">
                 <RefreshCw className="w-6 h-6 text-[#9a7d46] animate-spin" />
@@ -385,7 +385,7 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
           </div>
 
           {/* 金箔質感文字區 */}
-          <div className="flex-1 flex flex-col justify-center items-center text-center mt-3 pb-4">
+          <div className="flex flex-col items-center text-center mt-3 pb-4">
             
             {/* 金箔裝飾花邊 */}
             <div className="flex items-center gap-2 mb-2.5 opacity-75">
@@ -394,8 +394,8 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
               <div className="w-8 h-[1px] bg-gradient-to-l from-transparent to-[#bba06a]" />
             </div>
 
-            {/* 祝福語：金箔微光 */}
-            <p className="mt-1 text-[11px] leading-relaxed font-semibold bg-gradient-to-b from-[#8f6d21] to-[#604914] bg-clip-text text-transparent px-1 select-text max-w-[240px] drop-shadow-[0_0.5px_0.5px_rgba(255,255,255,0.6)]">
+            {/* 祝福語：金箔微光 — 每一小句獨立成行 */}
+            <p className="mt-1 text-[11px] leading-relaxed font-semibold bg-gradient-to-b from-[#8f6d21] to-[#604914] bg-clip-text text-transparent px-1 select-text max-w-[240px] drop-shadow-[0_0.5px_0.5px_rgba(255,255,255,0.6)] whitespace-pre-line">
               {config.postcardText || '感恩這份奇妙的相遇，獻上我最溫暖的祝福！願你的每一步都充滿陽光。'}
             </p>
           </div>

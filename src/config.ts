@@ -30,7 +30,9 @@ export const ALIGNMENT_CONFIG: AlignmentConfig = {
   finalUrl: '/assets/Y/Y3.jpg',     // 然後呈現 final
   avatarUrl: '/assets/Y/Y0.png',    // 隱私保護替身頭像圖
   postcardPhotoUrl: '/assets/Y/Y4.jpg', // 最後生成的專屬明信片核心照片 cardpic
-  postcardText: '感恩這份奇妙的相遇，獻上我最溫暖的祝福！願你的每一步都充滿陽光。', // 預設明信片字句
+  postcardText: `感恩這份奇妙的相遇，
+獻上我最溫暖的祝福！
+願你的每一步都充滿陽光。`, // 預設明信片字句
   guideTip: '「請將面部放入框線內，用於代入角色」', // 引導指示提示字
 };
 
@@ -64,7 +66,10 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     buttonText: '查收這份禮物',
     successMessage: '親愛的 Alice，祝你生日快樂！希望這份魔法變裝禮物能帶給你滿滿的歡笑！🎂🎉',
     postcardPhotoUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&q=80&w=800&h=1200', // Alice 的專屬明信片照片 (請上傳到 /assets/alice_postcard.png)
-    postcardText: '致親愛的 Alice：願這份星光魔法常伴你左右，每天都順心如意，生活甜如蜜！🌸✨',
+    postcardText: `致親愛的 Alice：
+願這份星光魔法常伴你左右，
+每天都順心如意，
+生活甜如蜜！🌸✨`,
   },
   bob: {
     top: '40%',
@@ -80,7 +85,10 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     buttonText: '啟動變身密碼',
     successMessage: 'Bob！恭喜完成今日冒險！這是屬於你的榮譽變身成果！🎖️🔥',
     postcardPhotoUrl: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=800&h=1200', // Bob 的專屬明信片照片 (請上傳到 /assets/bob_postcard.png)
-    postcardText: '冒險家 Bob：祝你在全新的一年裡，劈波斬浪，勇往直前！這張魔法明信片記下你帥氣的瞬間！🦸‍♂️🔥',
+    postcardText: `冒險家 Bob：
+祝你在全新的一年裡，
+劈波斬浪，勇往直前！
+這張魔法明信片記下你帥氣的瞬間！🦸‍♂️🔥`,
   },
   y: {
     top: '35%',
@@ -94,17 +102,12 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     postcardPhotoUrl: '/assets/Y/Y4.jpg',
     avatarUrl: '/assets/Y/Y0.png',
     title: '阿浚~ 為你打打氣！',
-    successMessage: '您的專屬變身魔法已成功啟動！',
     guideTip: '「請將面部放入框線內，用於代入角色」',
     postcardText: `阿浚，
-感恩你恆常傳遞嘅溫暖同關愛，
-你設身處地為我著想，
-我亦同樣為你守望。
-面對近日嘅堂慶、邨中尋、探望基層等事奉，
-同埋你嘅返工、長途攞中藥之付出，
-想藉著呢份心意
-浚仔為阿浚打打氣！
-祈求主保守你內心享有平安
+感恩你恆常傳遞嘅溫暖同關愛，你設身處地為我著想，我亦同樣為你守望。正如你所share嘅，小八同吉伊講，“一起去喔~”
+面對近日嘅堂慶、邨中尋、探望基層等事奉，同埋你嘅返工、長途攞中藥之付出，
+想藉著呢份心意，浚仔為阿浚打打氣！
+祈求主保守你內心享有平安，
 願主賜福與你！
 
 "要彼此同心" 羅馬書 12:16`,
@@ -121,13 +124,12 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     postcardPhotoUrl: '/assets/L/L4.png',
     avatarUrl: '/assets/L/L0.png',
     title: '雪兒~ 為你打打氣！',
-    successMessage: '您的專屬變身魔法已成功啟動！',
     guideTip: '「請將面部放入框線內，用於代入角色」',
     postcardText: `雪兒，
 感恩每次相遇！
-平日好好照顧自己
-用喜樂之心，愛生活、愛兔仔
-願主的恩典
+平日好好照顧自己，
+用喜樂之心，愛生活、愛兔仔，
+願主的恩典，
 隨住你對生命嘅熱愛，
 時刻陪伴住你！
 守護你平安、健康、喜樂~ 
