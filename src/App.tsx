@@ -211,10 +211,15 @@ export default function App() {
   }, [top, left, width, height]);
 
   // 9. 座標映射與 Cover 適配裁切
-  const mapVideoToContainer = useCallback((vx: number, vy: number, videoEl: HTMLVideoElement, containerEl: HTMLDivElement) => {
-    const vWidth = videoEl.videoWidth;
-    const vHeight = videoEl.videoHeight;
+  const mapVideoToContainer = useCallback((vx: number, vy: number, videoEl: HTMLVideoElement, containerEl: HTMLDivElement, isMobilePortrait: boolean) => {
+    let vWidth = videoEl.videoWidth;
+    let vHeight = videoEl.videoHeight;
     if (!vWidth || !vHeight) return { x: 0, y: 0 };
+
+    if (isMobilePortrait) {
+      vWidth = videoEl.videoHeight;
+      vHeight = videoEl.videoWidth;
+    }
 
     const cRect = containerEl.getBoundingClientRect();
     const cWidth = cRect.width;
@@ -235,7 +240,7 @@ export default function App() {
       dy = (cHeight - vHeight * scale) / 2;
     }
 
-    const screenX = (1 - vx) * vWidth * scale + dx;
+    const screenX = (isMobilePortrait ? vx : (1 - vx)) * vWidth * scale + dx;
     const screenY = vy * vHeight * scale + dy;
 
     return { x: screenX, y: screenY };
@@ -303,20 +308,35 @@ export default function App() {
     setIsFaceDetected(true);
     const landmarks = results.multiFaceLandmarks[0];
 
-    // 包裹計算臉部 bounding box
+    // 檢測是否為手機豎屏 (相機輸出為橫屏，但顯示容器為豎屏)
+    const isMobilePortrait = video.videoWidth > video.videoHeight && container.getBoundingClientRect().width < container.getBoundingClientRect().height;
+
+    let adjustedLandmarks = landmarks.map((lm: any) => ({ ...lm }));
+    if (isMobilePortrait) {
+      adjustedLandmarks = landmarks.map((lm: any) => {
+        // 旋轉 90 度並處理鏡像，將橫向相機地標轉換到直立螢幕坐標系
+        return {
+          ...lm,
+          x: lm.y,
+          y: lm.x
+        };
+      });
+    }
+
+    // 包裹計算臉部 bounding box (使用調整後的 landmarks)
     let minVx = 1, maxVx = 0;
     let minVy = 1, maxVy = 0;
-    for (const lm of landmarks) {
+    for (const lm of adjustedLandmarks) {
       if (lm.x < minVx) minVx = lm.x;
       if (lm.x > maxVx) maxVx = lm.x;
       if (lm.y < minVy) minVy = lm.y;
       if (lm.y > maxVy) maxVy = lm.y;
     }
 
-    // 計算 3D 旋轉姿態 (歪頭 Roll, 左右轉 Yaw, 上下點頭 Pitch)
+    // 計算 3D 旋轉姿態 (歪頭 Roll, 左右轉 Yaw, 上下點頭 Pitch) (使用調整後的 landmarks)
     let computedRoll = 0;
-    const pLeft = landmarks[130];
-    const pRight = landmarks[359];
+    const pLeft = adjustedLandmarks[130];
+    const pRight = adjustedLandmarks[359];
     if (pLeft && pRight) {
       const dry = pRight.y - pLeft.y;
       const drx = pRight.x - pLeft.x;
@@ -324,9 +344,9 @@ export default function App() {
     }
 
     let computedYaw = 0;
-    const nose = landmarks[4];
-    const borderLeft = landmarks[234];
-    const borderRight = landmarks[454];
+    const nose = adjustedLandmarks[4];
+    const borderLeft = adjustedLandmarks[234];
+    const borderRight = adjustedLandmarks[454];
     if (nose && borderLeft && borderRight) {
       const distLeft = Math.abs(nose.x - borderLeft.x);
       const distRight = Math.abs(nose.x - borderRight.x);
@@ -338,8 +358,8 @@ export default function App() {
     }
 
     let computedPitch = 0;
-    const forehead = landmarks[10];
-    const chin = landmarks[152];
+    const forehead = adjustedLandmarks[10];
+    const chin = adjustedLandmarks[152];
     if (nose && forehead && chin) {
       const distTop = Math.abs(nose.y - forehead.y);
       const distBottom = Math.abs(nose.y - chin.y);
@@ -350,8 +370,8 @@ export default function App() {
       }
     }
 
-    const tl = mapVideoToContainer(minVx, minVy, video, container);
-    const br = mapVideoToContainer(maxVx, maxVy, video, container);
+    const tl = mapVideoToContainer(minVx, minVy, video, container, isMobilePortrait);
+    const br = mapVideoToContainer(maxVx, maxVy, video, container, isMobilePortrait);
 
     const faceX = Math.min(tl.x, br.x);
     const faceY = Math.min(tl.y, br.y);
