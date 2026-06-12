@@ -506,19 +506,26 @@ export default function App() {
             });
           }
 
-          const tick = async () => {
+          let isProcessingFrame = false;
+
+          const tick = () => {
             if (!isTrackingRef.current) return;
-            
-            const video = videoElementRef.current;
-            if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-              try {
-                await faceMesh.send({ image: video });
-              } catch (err) {
-                console.warn('FaceMesh send frame error:', err);
-              }
-            }
-            
+
+            // requestAnimationFrame 永远在最外层畅通运行，绝不被异步算法阻塞
             animationFrameIdRef.current = requestAnimationFrame(tick);
+
+            const video = videoElementRef.current;
+            if (isProcessingFrame || !video || video.readyState < 2 || video.videoWidth <= 0 || video.videoHeight <= 0) {
+              return; // 上一帧仍在处理或视频未就绪，跳过本帧
+            }
+
+            isProcessingFrame = true;
+            faceMesh.send({ image: video }).then(() => {
+              isProcessingFrame = false;
+            }).catch((err: any) => {
+              console.warn('FaceMesh send frame error:', err);
+              isProcessingFrame = false;
+            });
           };
           
           // 啟動追蹤循環
@@ -740,18 +747,16 @@ export default function App() {
             boxShadow: 'inset 0 4px 12px rgba(97, 85, 60, 0.08)'
           }}
         >
-          {/* 真實鏡頭 - 保證渲染不暫停，不設置透明度，防止 Safari 省電模式暫停視頻導致追蹤卡住 */}
+          {/* 真實鏡頭 — 縮小至 4px 並設 opacity:0.01，視覺上完全不可見但仍被瀏覽器判定為「在視口內渲染」，避免 iOS Safari 省電降頻導致追蹤卡死 */}
           <video
             ref={videoElementRef}
             playsInline
             autoPlay
             muted
             crossOrigin="anonymous"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            className="pointer-events-none"
+            style={{ width: '4px', height: '4px', opacity: 0.01, objectFit: 'cover' }}
           />
-          
-          {/* 絕對遮蓋層 - 完全遮擋真實鏡頭，確保用戶真實面容不顯示，保護隱私 */}
-          <div className="absolute inset-0 w-full h-full bg-[#fbf9f4] pointer-events-none" />
 
           {/* 鏡像 3D 高精度動態捕捉替身容器 — 分層架構：外層居中定位（無 calc），內層純 px 跟蹤偏移（無 calc），徹底避免手機端 calc() inside transform 的相容性 bug */}
           {/* Layer A: 純居中容器，僅負責將左上角移到正中心 */}
@@ -871,7 +876,7 @@ export default function App() {
           {/* 方案二專屬：首頁精緻魔法邀請函卡 (Mystical Portal Intro)
               滿足「打開link後，首先出現的是懸浮的按鈕『查收這份禮物🎁』，周圍有 Three.js 粒子效果，背景隱在後方」 */}
           {phase === AppPhase.IDLE && (
-            <div className="absolute inset-0 z-[60] flex flex-col items-center justify-between p-8 bg-[#faf6ee]/95 backdrop-blur-xl animate-[fadeIn_0.5s_ease-out] pointer-events-auto">
+            <div className="absolute inset-0 z-[60] flex flex-col items-center justify-between p-8 bg-[#faf6ee]/98 animate-[fadeIn_0.5s_ease-out] pointer-events-auto">
               {/* Center magic radial glow */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-amber-200/50 to-orange-100/30 rounded-full blur-[80px] pointer-events-none" />
 
