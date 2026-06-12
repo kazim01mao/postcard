@@ -388,13 +388,13 @@ export default function App() {
 
     // 更新替身動態座標與縮放、傾斜與偏轉
     setAvatarState({
-      x: rawDx,  // 修正為同向移動，配合 mapVideoToContainer 已處理的鏡像
-      y: rawDy,
-      scale: sizeRatioW,
+      x: dx > toleranceX ? target.width * (rawDx < 0 ? -0.5 : 0.5) : rawDx,  // 修正為同向移動，配合 mapVideoToContainer 已處理的鏡像，並限制最大偏移量
+      y: dy > toleranceY ? target.height * (rawDy < 0 ? -0.5 : 0.5) : rawDy,
+      scale: isSizeAligned ? sizeRatioW : 1.0, // 如果大小不對齊，重置為 1.0 以免過小/過大
       detected: true,
-      roll: computedRoll,
-      yaw: computedYaw,
-      pitch: computedPitch
+      roll: isAligned ? computedRoll : 0, // 如果不對齊，重置角度
+      yaw: isAligned ? computedYaw : 0,
+      pitch: isAligned ? computedPitch : 0
     });
 
     if (isAligned) {
@@ -763,12 +763,11 @@ export default function App() {
           {/* 鏡像 3D 高精度動態捕捉替身容器 — 分層架構：外層居中定位（無 calc），內層純 px 跟蹤偏移（無 calc），徹底避免手機端 calc() inside transform 的相容性 bug */}
           {/* Layer A: 純居中容器，僅負責將左上角移到正中心 */}
           <div 
-            className="absolute top-1/2 left-1/2 pointer-events-none select-none"
+            className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center"
             style={{
-              width: avatarState.detected ? 'auto' : '100%',
-              height: avatarState.detected ? 'auto' : '100%',
+              width: '100%',
+              height: '100%',
               transform: 'translate(-50%, -50%)',
-              transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
             }}
           >
             {/* Layer B: 人臉追蹤偏移容器，僅使用純 px 值 translate，不包含 calc() */}
@@ -778,8 +777,9 @@ export default function App() {
                   ? `translate(${avatarState.x * 0.8}px, ${avatarState.y * 0.8}px) scale(${Math.max(0.65, Math.min(1.65, avatarState.scale))})`
                   : 'translate(0px, 0px) scale(1.0)',
                 willChange: avatarState.detected ? 'transform' : 'auto',
-                transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
+                transition: 'transform 0.1s linear' // 縮短動畫時間，讓跟隨更平滑
               }}
+              className="flex items-center justify-center"
             >
               {/* Layer C: 旋轉容器，僅負責 rotateZ 歪頭跟隨 */}
               <div 
@@ -789,7 +789,7 @@ export default function App() {
                     ? `rotateZ(${avatarState.roll}deg)`
                     : 'none',
                   willChange: avatarState.detected ? 'transform' : 'auto',
-                  transition: avatarState.detected ? 'none' : 'transform 0.8s ease-in-out'
+                  transition: 'transform 0.1s linear'
                 }}
               >
                 {/* 卡通替身 Y0 圖片 — 手機端追蹤時移除 filter 避免觸發昂貴重繪 */}
