@@ -514,24 +514,24 @@ export default function App() {
 
           let isProcessingFrame = false;
 
-          const tick = () => {
+          const tick = async () => {
             if (!isTrackingRef.current) return;
 
-            // requestAnimationFrame 永远在最外层畅通运行，绝不被异步算法阻塞
-            animationFrameIdRef.current = requestAnimationFrame(tick);
-
             const video = videoElementRef.current;
-            if (isProcessingFrame || !video || video.readyState < 2 || video.videoWidth <= 0 || video.videoHeight <= 0) {
-              return; // 上一帧仍在处理或视频未就绪，跳过本帧
+            
+            if (!isProcessingFrame && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+              isProcessingFrame = true;
+              try {
+                await faceMesh.send({ image: video });
+              } catch (err: any) {
+                console.warn('FaceMesh send frame error:', err);
+              } finally {
+                isProcessingFrame = false;
+              }
             }
-
-            isProcessingFrame = true;
-            faceMesh.send({ image: video }).then(() => {
-              isProcessingFrame = false;
-            }).catch((err: any) => {
-              console.warn('FaceMesh send frame error:', err);
-              isProcessingFrame = false;
-            });
+            
+            // 將 requestAnimationFrame 放在最後，確保前一幀的邏輯（即使被跳過）不影響下一幀排程
+            animationFrameIdRef.current = requestAnimationFrame(tick);
           };
           
           // 啟動追蹤循環
