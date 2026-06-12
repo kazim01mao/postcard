@@ -21,9 +21,9 @@ export const ALIGNMENT_CONFIG: AlignmentConfig = {
   width: '180px',      // 对齐区域的宽度 (可设 px 或 %)
   height: '180px',     // 对齐区域的高度 (可设 px 或 %)
   borderRadius: '50%', // 圆角对界：'50%' 代表圆形/椭圆洞口
-  title: '专属明信片', // 预设首页大标题
-  subtitle: '专属明信片', // 预设首页副标题
-  buttonText: '查收这份礼物', // 预设主导按钮文字
+  title: '專屬明信片', // 预设首页大标题
+  subtitle: '專屬明信片', // 预设首页副标题
+  buttonText: '查收呢份礼物', // 预设主导按钮文字
   successMessage: '感恩这份奇妙的相遇，献上我最温暖的祝福！', // 预设祝贺贺词
   initialUrl: '/assets/Y/Y1.jpg', // 最初呈现 initial
   resultUrl: '/assets/Y/Y2.jpg',   // 然后呈现 result (实际文件是 jpg)
@@ -102,7 +102,7 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     postcardPhotoUrl: '/assets/Y/Y4.jpg',
     avatarUrl: '/assets/Y/Y0.png',
     title: '阿浚~ 为你打打气！',
-    guideTip: '「请将面部放入框线内，用于代入角色」',
+    guideTip: '「想象下，呢個時候吉伊心中諗緊乜嘢呢~」',
     postcardText: `阿浚，
 感恩你恒常传递嘅温暖同关爱，你设身处地为我着想，我亦同样为你守望。正如你所share嘅，小八同吉伊讲，"一起去喔~"
 面对近日嘅堂庆、邨中寻、探望基层等事奉，同埋你嘅返工、长途攞中药之付出，
@@ -124,7 +124,7 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     postcardPhotoUrl: '/assets/L/L4.png',
     avatarUrl: '/assets/L/L0.png',
     title: '雪儿~ 为你打打气！',
-    guideTip: '「请将面部放入框线内，用于代入角色」',
+    guideTip: '「想象下，呢個畫面襯邊位呢~」',
     postcardText: `雪儿，
 感恩每次相遇！
 平日好好照顾自己，

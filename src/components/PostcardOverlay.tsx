@@ -180,8 +180,8 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
     setIsGenerating(true);
     setError(null);
 
-    // 🏆 動態取得客製化配置
-    const photoUrl = config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
+    // 🏆 動態取得客製化配置 - 優先使用編號為0的圖片 (config.avatarUrl)
+    const photoUrl = config.avatarUrl || config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
     const textMsg = config.postcardText || config.successMessage || '送上一份誠摯的驚喜，祝你魔法般的一天！';
     const titleText = config.title || '魔法變裝紀念';
 
@@ -206,9 +206,19 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         ctx.font = tmpFont;
         const limit = 18; // 每行字數（縮小以確保中文字不溢出）
         const lines: string[] = [];
-        for (let i = 0; i < textMsg.length; i += limit) {
-          lines.push(textMsg.substring(i, i + limit));
-        }
+        
+        // 依據原始換行符 \n 進行分行，保留分行並限制每行最大字數
+        const rawLines = textMsg.split('\n');
+        rawLines.forEach((rawLine: string) => {
+          if (rawLine.length === 0) {
+            lines.push(''); // 保留空行
+          } else {
+            for (let i = 0; i < rawLine.length; i += limit) {
+              lines.push(rawLine.substring(i, i + limit));
+            }
+          }
+        });
+
         // 動態高度：照片區域 (到 y=694) + 裝飾區 (到 y=740) + 文字區 (起始 y=810，每行 48px) + 底部留白 60px
         const textBlockHeight = lines.length * 48 + 60;
         const canvasHeight = Math.max(1100, 810 + textBlockHeight);
@@ -351,7 +361,8 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
-  const photoUrl = config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
+  // 優先使用編號為0的圖片 (config.avatarUrl)
+  const photoUrl = config.avatarUrl || config.postcardPhotoUrl || config.resultUrl || './assets/result.png';
 
   return (
     <div className="absolute inset-0 z-[100] bg-black/55 backdrop-blur-md flex items-center justify-center p-3.5 pointer-events-auto select-none animate-[fadeIn_0.3s_ease-out] overflow-hidden">
@@ -374,7 +385,7 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
         {/* 內頁：包含插畫與金箔文字 — 文字過多時此區域可垂直捲動 */}
         <div className="flex-1 flex flex-col pt-6 px-6 overflow-y-auto min-h-0">
           
-          {/* 明信片手繪插畫：直接印刷在手工紙上的卡通貓吃壽司插畫 */}
+          {/* 明信片手繪插畫：在明信片界面上，這裡只需要顯示編號為0的圖片預覽即可 */}
           <div className="w-full aspect-square rounded-xl overflow-hidden border border-[#eeddbb]/30 shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-stone-100 flex items-center justify-center relative mt-3 shrink-0">
             {isGenerating ? (
               <div className="flex flex-col items-center gap-1.5 py-6">
@@ -383,16 +394,10 @@ export const PostcardOverlay: React.FC<PostcardOverlayProps> = ({ isOpen, onClos
               </div>
             ) : error ? (
               <span className="text-xs text-red-400 p-4 text-center">{error}</span>
-            ) : generatedImgSrc ? (
-              <img
-                src={generatedImgSrc}
-                alt="你的專屬明信片"
-                className="w-full h-full object-contain"
-              />
             ) : (
               <img
                 src={photoUrl}
-                alt="Postcard Illustration"
+                alt="你的專屬明信片"
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />

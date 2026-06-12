@@ -109,7 +109,7 @@ export default function App() {
     () => `點擊下方的「${config.buttonText}」開始體驗`
   );
 
-  // 3.5 虛擬替身私密狀態 (不呈現真實臉部，維護用戶隱私)
+  // 3.5 虛擬替身私密狀態 (已靜態化，不進行移動或追蹤)
   const [avatarState, setAvatarState] = useState({
     x: 0,
     y: 0,
@@ -270,10 +270,16 @@ export default function App() {
       }
     }, 1500);
 
-    // 【轉場狀態三】：過 2.2 秒，進入 STAGE3 動態播放 final 圖片/影片
+    // 檢查是否為 y 用戶，若是則停留時間為 3 秒 (3000ms)，否則為 2.2 秒 (2200ms)
+    const params = new URLSearchParams(window.location.search);
+    const friendName = params.get('friend') || params.get('u');
+    const isUserY = friendName?.toLowerCase() === 'y';
+    const transitionDelay = isUserY ? 3000 : 2200;
+
+    // 【轉場狀態三】：過指定時間，進入 STAGE3 動態播放 final 圖片/影片
     setTimeout(() => {
       setPhase(AppPhase.STAGE3);
-    }, 2200);
+    }, transitionDelay);
 
   }, [playSuccessChime]);
 
@@ -453,31 +459,18 @@ export default function App() {
     }
   }, [phase, mapVideoToContainer, getAlignmentBoxPixels, triggerTransitionSecquence]);
 
-  // 12. 初始化啟動鏡頭 & MediaPipe 相機庫
+  // 12. 初始化啟動鏡頭 & 開啟靜態代入模式（移除複雜的 MediaPipe 移動追蹤及人臉對齊檢測功能）
   const startCameraAndMagic = async () => {
     setPermissionError(null);
     setPhase(AppPhase.LOADING);
-    setAlignmentHint('⌛ 正在授權喚醒相機與加載人臉算法...');
+    setAlignmentHint('⌛ 正在授權喚醒相機...');
 
     try {
-      // 檢查 MediaPipe 庫是否已加載，若未加載則等待
-      let attempts = 0;
-      while (!(window as any).FaceMesh && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-
-      if (!(window as any).FaceMesh) {
-        throw new Error('MediaPipe 庫腳本加載超時，請檢查網絡連接。');
-      }
-
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
           width: { ideal: 1280, min: 320 },
           height: { ideal: 1280, min: 240 }
-          // 移除強制 landscape 比例，適配手機端原生 Portrait 畫面
-          // 添加最小分辨率，確保手機端可以獲得支持的分辨率
         },
         audio: false,
       });
@@ -485,143 +478,27 @@ export default function App() {
       videoStreamRef.current = stream;
       if (videoElementRef.current) {
         videoElementRef.current.srcObject = stream;
-        // 在行動端 Safari，確保影片強制播放
         videoElementRef.current.setAttribute('playsinline', 'true');
         videoElementRef.current.setAttribute('autoplay', 'true');
         videoElementRef.current.setAttribute('muted', 'true');
         
-        // 等待視頻元數據加載完成再播放
         const playPromise = videoElementRef.current.play();
         if (playPromise !== undefined) {
           try {
             await playPromise;
           } catch (err: any) {
             console.warn('相機流播放被中斷或被瀏覽器阻止:', err);
-            // 繼續執行，不中斷流程
           }
         }
       }
 
-      const faceMesh = new (window as any).FaceMesh({
-        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-      });
-
-      faceMesh.setOptions({
-        maxNumFaces: 1,
-        refineLandmarks: true, // 提高精度
-        minDetectionConfidence: 0.6, // 調整檢測信心度
-        minTrackingConfidence: 0.6,  // 調整追蹤信心度
-      });
-
-      faceMesh.onResults(handleFaceMeshResults);
-
-      if (videoElementRef.current) {
-        isTrackingRef.current = true;
-        
-        // 等待視頻真正準備好再開始追蹤
-        const videoElement = videoElementRef.current;
-        const startTracking = async () => {
-          // 等待視頻元素有可播放的狀態 (加超時保護，避免無痕模式下永遠掛起)
-          if (videoElement.readyState < 2) {
-            await new Promise((resolve, reject) => {
-              const timer = setTimeout(() => reject(new Error('Video canplay timeout')), 5000);
-              videoElement.addEventListener('canplay', () => {
-                clearTimeout(timer);
-                resolve(true);
-              }, { once: true });
-            });
-          }
-
-          let isProcessingFrame = false;
-          let lastProcessTime = Date.now(); // 防死鎖計時器
-
-          // 建立一個高能 Canvas 抽幀緩衝，100% 解決 Android Chrome webview 無法直接對 WebRTC Video 上傳 WebGL 紋理的底層相容性 Bug！
-          const helperCanvas = document.createElement('canvas');
-          const helperCtx = helperCanvas.getContext('2d');
-
-          // 移除 async，改為同步函數，並徹底移除 lastVideoTime 與 currentTime 判斷
-          const tick = () => {
-            if (!isTrackingRef.current) return;
-
-            // 1. 進入 tick 第一件事就是預約下一幀 (保證主循環絕對不死掉)
-            animationFrameIdRef.current = requestAnimationFrame(tick);
-
-            const video = videoElementRef.current;
-
-            // 2. 防禦機制：如果 MediaPipe 在手機端當機超過 500 毫秒，強制解鎖
-            if (isProcessingFrame && Date.now() - lastProcessTime > 500) {
-              console.warn('⚠️ 偵測到算法死鎖，強制解鎖接收新畫面');
-              isProcessingFrame = false;
-            }
-
-            // 3. 只要沒在處理中，且畫面準備好，就直接抽幀發送
-            if (!isProcessingFrame && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-              isProcessingFrame = true;
-              lastProcessTime = Date.now();
-              
-              // 4. 解決 Android Chrome WebRTC -> WebGL / WASM 共享紋理崩潰 bug 的終極大招：
-              // 透過 Canvas 2D 將畫面抽取出來，再發送給 MediaPipe。同時將尺寸限制在 480px 以內，速度狂飆 300% 且極省電！
-              const maxDim = 480;
-              let targetWidth = video.videoWidth;
-              let targetHeight = video.videoHeight;
-              if (targetWidth > maxDim || targetHeight > maxDim) {
-                if (targetWidth > targetHeight) {
-                  targetHeight = Math.round((targetHeight * maxDim) / targetWidth);
-                  targetWidth = maxDim;
-                } else {
-                  targetWidth = Math.round((targetWidth * maxDim) / targetHeight);
-                  targetHeight = maxDim;
-                }
-              }
-              
-              helperCanvas.width = targetWidth;
-              helperCanvas.height = targetHeight;
-              if (helperCtx) {
-                helperCtx.drawImage(video, 0, 0, targetWidth, targetHeight);
-              }
-
-              // 5. 使用 Promise (.then) 而不是 await 傳送 Canvas，讓背景去算，不卡死主線程
-              faceMesh.send({ image: helperCanvas })
-                .then(() => {
-                  isProcessingFrame = false; // 算完才解鎖
-                })
-                .catch((err: any) => {
-                  console.warn('FaceMesh send frame error:', err);
-                  isProcessingFrame = false; // 出錯也要解鎖，避免永久卡住
-                });
-            }
-          };
-          
-          // 啟動追蹤循環
-          tick();
-
-          activeCameraRef.current = {
-            stop: () => {
-              isTrackingRef.current = false;
-              if (animationFrameIdRef.current) {
-                cancelAnimationFrame(animationFrameIdRef.current);
-                animationFrameIdRef.current = null;
-              }
-            }
-          };
-          
-          setPhase(AppPhase.ACTIVE);
-          setAlignmentHint('🎯 請將臉龐套入虛線圈圈中心');
-        };
-
-        startTracking().catch(err => {
-          console.error('Face tracking initialization failed:', err);
-          setPhase(AppPhase.ACTIVE);
-          setAlignmentHint('⚠️ 已為您開通「靜態對位模式」，直接點擊下方藍色膠囊即可進入下一步！');
-        });
-      }
+      setPhase(AppPhase.ACTIVE);
+      setAlignmentHint('🎯 請將您的臉龐置於框線中心');
 
     } catch (err: any) {
-      console.error('開啟變裝魔法失敗:', err);
-      // 🔥 解決閃退問題：即使相機調用失敗或 CDN 腳本載入超時，也絕不退回到首頁 (IDLE)！
-      // 而是正常停留在 ACTIVE 頁面，提供優雅的「精緻靜態校位對位模式」，並允許用戶直接點擊「我已代入角色，直接進入下一步」！
+      console.error('開啟相機失敗:', err);
       setPhase(AppPhase.ACTIVE);
-      setPermissionError(err.message || '相機調用或算法載入受限（若處於沙盒預覽中，請開新視窗授權）');
+      setPermissionError(err.message || '相機調用受限（若處於沙盒預覽中，請開新視窗授權）');
       setAlignmentHint('⚠️ 已為您開通「靜態對位模式」，直接點擊下方藍色膠囊即可進入下一步！');
     }
   };
@@ -804,7 +681,7 @@ export default function App() {
           {/* 1. 背景底色層 (最底) */}
           <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none z-0" />
 
-          {/* 2. 替身與特效 (中間) — 雙層嵌套結構，100% 解決 Android / iOS 舊版本不支援 transform: calc() 的相容性 Bug */}
+          {/* 2. 替身與特效 (中間) — 已靜態化，固定於正中心不移動 */}
           {/* Layer A: 居中定位層 */}
           <div 
             className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center z-10"
@@ -817,45 +694,22 @@ export default function App() {
               transform: 'translate(-50%, -50%)',
             }}
           >
-            {/* Layer B: 位移與縮放層 (純 px 與數值，無 calc) */}
-            <div
-              style={{
-                transform: avatarState.detected
-                  ? `translate(${avatarState.x}px, ${avatarState.y}px) scale(${Math.max(0.7, Math.min(1.5, avatarState.scale))})`
-                  : 'translate(0px, 0px) scale(1.0)',
-                willChange: 'transform',
-                transition: avatarState.detected ? 'transform 0.04s linear' : 'transform 0.5s ease-in-out'
-              }}
-              className="flex items-center justify-center"
-            >
-              {/* Layer C: 歪頭旋轉層 */}
-              <div 
-                className={`flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
-                style={{
-                  transform: avatarState.detected ? `rotateZ(${avatarState.roll}deg)` : 'none',
-                  willChange: 'transform',
-                  transition: avatarState.detected ? 'transform 0.08s linear' : 'transform 0.5s ease-in-out'
-                }}
-              >
+            {/* Layer B: 靜態替身容器 */}
+            <div className="flex items-center justify-center">
+              {/* Layer C: 靜態替身圖像 */}
+              <div className="flex flex-col items-center justify-center relative">
                 <img
                   src={config.avatarUrl || './assets/Y/Y0.png'}
                   referrerPolicy="no-referrer"
-                  className="w-[90px] h-[90px] object-contain"
-                  style={{ filter: avatarState.detected ? 'none' : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.25))' }}
+                  className="w-[90px] h-[90px] object-contain drop-shadow-[0_4px_10px_rgba(110,95,70,0.25)]"
                   alt="3D 隱私保護替身"
-                  onError={(e) => { e.currentTarget.src = './assets/Y/Y0.png'; }}
+                  onError={(e: any) => { e.currentTarget.src = './assets/Y/Y0.png'; }}
                 />
-                {isCurrentlyAligned && (
-                  <div className="absolute -top-3 -right-3 animate-bounce"><span className="text-xl">✨</span></div>
-                )}
-                {isCurrentlyAligned && (
-                  <div className="absolute -bottom-2 -left-2 animate-bounce delay-150"><span className="text-lg">💖</span></div>
-                )}
               </div>
             </div>
           </div>
 
-          {/* 3. 真實鏡頭 (最上層) — 放在該區塊最上層騙過手機省電機制，1% 透明度肉眼不可見，且恢復 w-full h-full 滿版大小以免 MediaPipe 追蹤比例錯誤 */}
+          {/* 3. 真實鏡頭 (最上層) — 1% 透明度肉眼不可見 */}
           <video
             ref={videoElementRef}
             playsInline
@@ -866,13 +720,12 @@ export default function App() {
             style={{ opacity: 0.01 }}
           />
 
-          {/* 4. 視覺引導框圈 (最最上層) */}
+          {/* 4. 視覺引導框圈 (最最上層) — 已刪除虛線邊框，僅保留圓形鏤空遮罩效果 */}
           <div 
             className="absolute pointer-events-none transition-all duration-300 z-30"
             style={{
               top: top, left: left, width: width, height: height, borderRadius: borderRadius,
               transform: 'translate(-50%, -50%)',
-              border: '2px dashed rgba(223, 201, 155, 0.65)',
               boxShadow: '0 0 0 9999px rgba(251, 249, 244, 0.4)'
             }}
           />
@@ -991,61 +844,7 @@ export default function App() {
             </div>
           )}
 
-          {/* 技術校準虛線圓框 */}
-          <div
-            className={`absolute transition-all duration-1000 ease-in-out select-none pointer-events-none border-dashed
-              ${(phase === AppPhase.IDLE || phase === AppPhase.LOADING || phase === AppPhase.ACTIVE || phase === AppPhase.ALIGNED)
-                ? (isCurrentlyAligned ? 'animate-green-pulse' : 'animate-breath')
-                : ''
-              }
-            `}
-            id="alignment-box-rect"
-            style={{
-              opacity: (phase === AppPhase.IDLE || phase === AppPhase.LOADING || phase === AppPhase.ACTIVE || phase === AppPhase.ALIGNED) ? 1 : 0,
-              top: top,
-              left: left,
-              width: width,
-              height: height,
-              borderRadius: borderRadius,
-              transform: 'translate(-50%, -50%)',
-              borderWidth: '2.5px',
-              borderColor: isCurrentlyAligned ? 'rgba(34, 197, 94, 0.95)' : 'rgba(255, 255, 255, 0.9)',
-              backgroundColor: 'transparent',
-              boxShadow: isCurrentlyAligned ? '0 0 20px rgba(34, 197, 94, 0.4)' : 'none',
-            }}
-          >
-            {/* 綠色進度弧圈 */}
-            {isCurrentlyAligned && alignmentProgress > 0 && (
-              <div 
-                className="absolute -inset-1 border-2 border-emerald-400 transition-all opacity-85"
-                style={{ 
-                  clipPath: `inset(${100 - alignmentProgress}% 0px 0px 0px)`,
-                  borderRadius: borderRadius,
-                }}
-              />
-            )}
-
-            {/* 優雅十字定位絲心 */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-30">
-              <div className="w-4 h-[1px] bg-white" />
-              <div className="h-4 w-[1px] bg-white absolute" />
-            </div>
-
-            {/* 若相機授權失敗或有錯誤，在圈圈內部提供極為優美的人臉虛擬輪廓與文字提示，完美保證視覺品質 */}
-            {permissionError && (
-              <div className="absolute inset-x-2 inset-y-6 flex flex-col items-center justify-center bg-[#fdfbf6]/20 backdrop-blur-[1px] rounded-full text-center animate-[fadeIn_0.5s_ease-out] select-none pointer-events-none">
-                <svg className="w-12 h-12 text-amber-800/15 mb-2 animate-[pulse_3s_infinite]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25zm0 3.75h.008v.008H12v-.008zM9.75 8.25h.008v.008H9.75V8.25zm0 3.75h.008v.008H9.75v-.008zm4.5-3.75h.008v.008h-.008V8.25zm0 3.75h.008v.008h-.008v-.008z" />
-                </svg>
-                <p className="text-[10px] text-amber-900/60 font-sans font-semibold tracking-wider mb-0.5">
-                  靜態置中對齊中
-                </p>
-                <span className="text-[8px] text-amber-800/40 font-mono tracking-widest scale-90">
-                  ALIGNMENT READY
-                </span >
-              </div >
-            )}
-          </div >
+          {/* 技術校準虛線圓框 — 已按照需求刪除虛線框 */}
 
           {/* 底部功能控制板區 */}
           <div className="w-full flex flex-col gap-3 pointer-events-auto mt-auto relative z-50 shrink-0">
