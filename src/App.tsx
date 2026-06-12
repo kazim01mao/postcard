@@ -129,6 +129,7 @@ export default function App() {
   const animationFrameIdRef = useRef<number | null>(null);
   const isTrackingRef = useRef<boolean>(false);
   const alignmentStartRef = useRef<number | null>(null);
+  const lastStateUpdateTimeRef = useRef<number>(0); // 節流用：限制 setAvatarState 更新頻率，避免手機 CPU 因過度渲染而卡死
   const [showWhiteFlash, setShowWhiteFlash] = useState(false);
 
   // 6. 微魔法琶音器提示音
@@ -403,15 +404,20 @@ export default function App() {
     const boundedDx = Math.max(-maxDx, Math.min(maxDx, finalDx));
     const boundedDy = Math.max(-maxDy, Math.min(maxDy, finalDy));
 
-    setAvatarState({
-      x: boundedDx,
-      y: boundedDy,
-      scale: isSizeAligned ? sizeRatioW : 1.0, 
-      detected: true,
-      roll: isAligned ? computedRoll : 0, 
-      yaw: isAligned ? computedYaw : 0,
-      pitch: isAligned ? computedPitch : 0
-    });
+    // 節流機制：限制 setAvatarState 最高每秒 20-30 次更新 (約 35ms)，避免手機 CPU 因每秒 30+ 次 React 重渲染而卡死主線程
+    const now = performance.now();
+    if (now - lastStateUpdateTimeRef.current > 35) {
+      lastStateUpdateTimeRef.current = now;
+      setAvatarState({
+        x: boundedDx,
+        y: boundedDy,
+        scale: isSizeAligned ? sizeRatioW : 1.0, 
+        detected: true,
+        roll: isAligned ? computedRoll : 0, 
+        yaw: isAligned ? computedYaw : 0,
+        pitch: isAligned ? computedPitch : 0
+      });
+    }
 
     if (isAligned) {
       setIsCurrentlyAligned(true);
@@ -527,13 +533,16 @@ export default function App() {
           }
 
           let isProcessingFrame = false;
+          let lastVideoTime = -1; // 紀錄上一幀的時間，避免將相同畫面重複送入 MediaPipe 導致 WebAssembly 死鎖
 
           const tick = async () => {
             if (!isTrackingRef.current) return;
 
             const video = videoElementRef.current;
             
-            if (!isProcessingFrame && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+            // 確保 currentTime 有改變 (新幀到達) 才發送給 MediaPipe，避免手機端相機更新率低於螢幕更新率時重複處理同一畫面
+            if (!isProcessingFrame && video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0 && video.currentTime !== lastVideoTime) {
+              lastVideoTime = video.currentTime;
               isProcessingFrame = true;
               try {
                 await faceMesh.send({ image: video });
@@ -767,18 +776,18 @@ export default function App() {
             boxShadow: 'inset 0 4px 12px rgba(97, 85, 60, 0.08)'
           }}
         >
-          {/* 真實鏡頭 — 完全渲染但不透明度屬性，確保 iOS Safari 判定影片「正在視口內播放」以維持硬體解碼器持續輸出幀資料 */}
+          {/* 不透明遮蓋層 — 位於 video 下方 (DOM 順序在前)，先渲染背景色 */}
+          <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none" />
+
+          {/* 真實鏡頭 — 疊在遮蓋層上方，使用 opacity-[0.01] 欺騙 iOS Safari 的「視訊遮蔽暫停」機制，確保硬體解碼器持續輸出幀資料供 MediaPipe 使用 */}
           <video
             ref={videoElementRef}
             playsInline
             autoPlay
             muted
             crossOrigin="anonymous"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-[0.01]"
           />
-
-          {/* 不透明遮蓋層 — 將真實鏡頭完全遮擋，確保用戶無法看見真實面容；必須位於 <video> 之後、avatar 之前，利用 DOM 順序實現 z 軸分層 */}
-          <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none" />
 
           {/* 鏡像 3D 高精度動態捕捉替身容器 — 分層架構：外層居中定位（無 calc），內層純 px 跟蹤偏移（無 calc），徹底避免手機端 calc() inside transform 的相容性 bug */}
           {/* Layer A: 純居中容器，僅負責將左上角移到正中心 */}
@@ -1040,11 +1049,6 @@ export default function App() {
               </button>
             )}
 
-            {/* 底部 iOS 系統安全留白 */}
-            {(phase === AppPhase.ACTIVE || phase === AppPhase.STAGE2 || phase === AppPhase.STAGE3) && (
-              <div className="w-full h-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pointer-events-none select-none" />
-            )}
-
             {/* 連載加載狀態 */}
             {phase === AppPhase.LOADING && (
               <div className="w-full py-4 bg-white/5 border border-white/10 text-white/85 font-sans text-xs rounded-2xl backdrop-blur-md flex items-center justify-center gap-2.5 shadow-lg">
@@ -1052,8 +1056,6 @@ export default function App() {
                 連鏡頭並載入人臉定位算法中...
               </div>
             )}
-
-            {/* 關閉按鈕已依要求刪除 */}
 
             {/* 錯誤處理與 iframe 開新頁提示 */}
             {permissionError && (
@@ -1067,6 +1069,11 @@ export default function App() {
               </div>
             )}
           </div>
+
+          {/* 底部 iOS 系統安全留白緩衝 (防止按鈕被瀏覽器 UI 遮擋) */}
+          {(phase === AppPhase.ACTIVE || phase === AppPhase.STAGE2 || phase === AppPhase.STAGE3) && (
+            <div className="w-full shrink-0 pointer-events-none select-none" style={{ height: 'env(safe-area-inset-bottom, 16px)' }} />
+          )}
         </div>
 
         {/* =========================================================
