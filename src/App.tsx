@@ -367,7 +367,7 @@ export default function App() {
     if (!target) return;
 
     // 計算虛擬替身偏移量 (鏡像處理，X 方向取反以便與真人的實體左右動作維持一致)
-    const rawDx = faceCenter.x - target.centerX;
+    const rawDx = target.centerX - faceCenter.x; // 反轉 X 方向，使其與相機畫面一致
     const rawDy = faceCenter.y - target.centerY;
 
     // 比對判斷誤差百分比 - 根據反饋再度大幅放寬，讓用戶更容易對齊
@@ -387,14 +387,20 @@ export default function App() {
     const isAligned = isCenterAligned && isSizeAligned;
 
     // 更新替身動態座標與縮放、傾斜與偏轉
+    // 在行動端上，直接使用計算出的偏移量，並加上簡單的邊界限制
+    const maxDx = target.width * 1.5;
+    const maxDy = target.height * 1.5;
+    const boundedDx = Math.max(-maxDx, Math.min(maxDx, rawDx));
+    const boundedDy = Math.max(-maxDy, Math.min(maxDy, rawDy));
+
     setAvatarState({
-      x: dx > toleranceX ? target.width * (rawDx < 0 ? -0.5 : 0.5) : rawDx,  // 修正為同向移動，配合 mapVideoToContainer 已處理的鏡像，並限制最大偏移量
-      y: dy > toleranceY ? target.height * (rawDy < 0 ? -0.5 : 0.5) : rawDy,
-      scale: isSizeAligned ? sizeRatioW : 1.0, // 如果大小不對齊，重置為 1.0 以免過小/過大
+      x: boundedDx,
+      y: boundedDy,
+      scale: sizeRatioW || 1.0, 
       detected: true,
-      roll: isAligned ? computedRoll : 0, // 如果不對齊，重置角度
-      yaw: isAligned ? computedYaw : 0,
-      pitch: isAligned ? computedPitch : 0
+      roll: computedRoll, 
+      yaw: computedYaw,
+      pitch: computedPitch
     });
 
     if (isAligned) {
