@@ -696,7 +696,7 @@ export default function App() {
             可支援影片或圖片格式。
             ========================================== */}
         <div 
-          className="absolute inset-0 z-30 transition-opacity duration-1000 ease-in-out"
+          className="absolute inset-0 z-40 transition-opacity duration-1000 ease-in-out"
           style={{ opacity: phase === AppPhase.STAGE3 ? 1 : 0 }}
         >
           {!hasFinalError ? (
@@ -734,7 +734,7 @@ export default function App() {
             可支援影片或圖片格式。
             ========================================== */}
         <div 
-          className="absolute inset-0 z-20 transition-opacity duration-1000 ease-in-out"
+          className="absolute inset-0 z-30 transition-opacity duration-1000 ease-in-out"
           style={{ opacity: phase === AppPhase.STAGE2 ? 1 : 0 }}
         >
           {!hasResultError ? (
@@ -770,52 +770,20 @@ export default function App() {
             Layer 3：相機影片與隱私替身 (Privacy-first Animated Avatar)
             ========================================== */}
         <div 
-          className="absolute inset-0 z-15 transition-opacity duration-1000 ease-in-out"
+          className="absolute inset-0 z-10 transition-opacity duration-1000 ease-in-out"
           style={{ 
             opacity: (phase === AppPhase.ACTIVE || phase === AppPhase.LOADING || phase === AppPhase.ALIGNED) ? 1 : 0,
-            backgroundColor: '#fbf9f4' // 保持溫潤柔和的卡片背景色底
+            backgroundColor: '#fbf9f4' 
           }}
         >
-          {/* 不透明遮蓋層 — 確保用戶真實面容100%不顯示，保護隱私 */}
-          <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none z-10" />
+          {/* 1. 背景底色層 (最底) */}
+          <div className="absolute inset-0 bg-[#fbf9f4] pointer-events-none z-0" />
 
-          {/* 真實鏡頭 — 使用隱形尺寸欺騙 iOS Safari，確保硬體解碼器持續輸出幀資料 */}
-          <video
-            ref={videoElementRef}
-            playsInline
-            autoPlay
-            muted
-            crossOrigin="anonymous"
-            className="absolute pointer-events-none z-0"
-            style={{ width: '10px', height: '10px', top: 0, left: 0, opacity: 0.01 }}
-          />
-
-          {/* 視覺引導框圈 — 僅作為UI邊框呈現，絕不用它來裁剪 Avatar */}
+          {/* 2. 替身與特效 (中間) */}
           <div 
-            className="absolute pointer-events-none transition-all duration-300"
+            className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center z-10"
             style={{
-              top: top,
-              left: left,
-              width: width,
-              height: height,
-              borderRadius: borderRadius,
-              transform: 'translate(-50%, -50%)',
-              border: '2px dashed rgba(223, 201, 155, 0.65)',
-              boxShadow: '0 0 0 9999px rgba(251, 249, 244, 0.4)' // 柔和的周邊遮罩
-            }}
-          />
-
-          {/* 獨立的替身動態捕捉容器 —— 擺脫父級尺寸限制，在全螢幕(或整個相機視窗)中自由移動 */}
-          <div 
-            className="absolute top-1/2 left-1/2 pointer-events-none select-none flex items-center justify-center z-20"
-            style={{
-              width: '200px',  // 給替身足夠的活動寬度
-              height: '200px', // 給替身足夠的活動高度
-              // 基於 config 中設定的中央坐標（如 left: 50%, top: 50%）作為運動起點
-              position: 'absolute',
-              top: top,
-              left: left,
-              // 純 px 偏移跟隨，徹底隔絕物理裁剪，平滑度提高
+              width: '200px', height: '200px', position: 'absolute', top: top, left: left,
               transform: avatarState.detected
                 ? `translate(calc(-50% + ${avatarState.x * 0.75}px), calc(-50% + ${avatarState.y * 0.75}px)) scale(${Math.max(0.7, Math.min(1.5, avatarState.scale))})`
                 : 'translate(-50%, -50%) scale(1.0)',
@@ -823,7 +791,6 @@ export default function App() {
               transition: avatarState.detected ? 'transform 0.08s linear' : 'transform 0.5s ease-in-out'
             }}
           >
-            {/* 旋轉容器 —— 負責隨真人歪頭 */}
             <div 
               className={`flex flex-col items-center justify-center ${!avatarState.detected ? 'animate-pulse' : ''}`}
               style={{
@@ -836,28 +803,40 @@ export default function App() {
                 src={config.avatarUrl || './assets/Y/Y0.png'}
                 referrerPolicy="no-referrer"
                 className="w-[90px] h-[90px] object-contain"
-                style={{
-                  filter: avatarState.detected ? 'none' : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.25))'
-                }}
+                style={{ filter: avatarState.detected ? 'none' : 'drop-shadow(0 4px 10px rgba(110, 95, 70, 0.25))' }}
                 alt="3D 隱私保護替身"
-                onError={(e) => {
-                  e.currentTarget.src = './assets/Y/Y1.png';
-                }}
+                onError={(e) => { e.currentTarget.src = './assets/Y/Y1.png'; }}
               />
-              
-              {/* 特效元素 */}
               {isCurrentlyAligned && (
-                <div className="absolute -top-3 -right-3 animate-bounce">
-                  <span className="text-xl">✨</span>
-                </div>
+                <div className="absolute -top-3 -right-3 animate-bounce"><span className="text-xl">✨</span></div>
               )}
               {isCurrentlyAligned && (
-                <div className="absolute -bottom-2 -left-2 animate-bounce delay-150">
-                  <span className="text-lg">💖</span>
-                </div>
+                <div className="absolute -bottom-2 -left-2 animate-bounce delay-150"><span className="text-lg">💖</span></div>
               )}
             </div>
           </div>
+
+          {/* 3. 真實鏡頭 (最上層) — 放在該區塊最上層騙過手機省電機制，1% 透明度肉眼不可見，且恢復 w-full h-full 滿版大小以免 MediaPipe 追蹤比例錯誤 */}
+          <video
+            ref={videoElementRef}
+            playsInline
+            autoPlay
+            muted
+            crossOrigin="anonymous"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
+            style={{ opacity: 0.01 }}
+          />
+
+          {/* 4. 視覺引導框圈 (最最上層) */}
+          <div 
+            className="absolute pointer-events-none transition-all duration-300 z-30"
+            style={{
+              top: top, left: left, width: width, height: height, borderRadius: borderRadius,
+              transform: 'translate(-50%, -50%)',
+              border: '2px dashed rgba(223, 201, 155, 0.65)',
+              boxShadow: '0 0 0 9999px rgba(251, 249, 244, 0.4)'
+            }}
+          />
         </div>
 
         {/* ==========================================
@@ -866,7 +845,7 @@ export default function App() {
             可支援影片或圖片格式。
             ========================================== */}
         <div 
-          className="absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000 ease-in-out"
+          className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-1000 ease-in-out"
           style={{ 
             opacity: (phase === AppPhase.IDLE || phase === AppPhase.LOADING || phase === AppPhase.ACTIVE) ? 1 : 0 
           }}
@@ -903,7 +882,7 @@ export default function App() {
         {/* ==========================================
             Layer 5：UI 資訊控制、狀態與對齊框圈。
             ========================================== */}
-        <div className="absolute inset-0 z-40 flex flex-col justify-between p-6 pb-[calc(env(safe-area-inset-bottom)+20px)] pointer-events-none">
+        <div className="absolute inset-0 z-50 flex flex-col justify-between p-6 pb-[calc(env(safe-area-inset-bottom)+20px)] pointer-events-none">
           
           {/* 中部與頂部（相機對齊與預覽區域）：彈性伸縮，保證底部高度優先不被推出螢幕以外 */}
           <div className="flex-1 min-h-0 relative pointer-events-none w-full" />
