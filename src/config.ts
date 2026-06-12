@@ -96,6 +96,18 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     title: '阿浚~ 為你打打氣！',
     successMessage: '您的專屬變身魔法已成功啟動！',
     guideTip: '「請將面部放入框線內，用於代入角色」',
+    postcardText: `阿浚，
+感恩你恆常傳遞嘅溫暖同關愛，
+你設身處地為我著想，
+我亦同樣為你守望。
+面對近日嘅堂慶、邨中尋、探望基層等事奉，
+同埋你嘅返工、長途攞中藥之付出，
+想藉著呢份心意
+浚仔為阿浚打打氣！
+祈求主保守你內心享有平安
+願主賜福與你！
+
+"要彼此同心" 羅馬書 12:16`,
   },
   l: {
     top: '35%',
@@ -111,6 +123,16 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     title: '雪兒~ 為你打打氣！',
     successMessage: '您的專屬變身魔法已成功啟動！',
     guideTip: '「請將面部放入框線內，用於代入角色」',
+    postcardText: `雪兒，
+感恩每次相遇！
+平日好好照顧自己
+用喜樂之心，愛生活、愛兔仔
+願主的恩典
+隨住你對生命嘅熱愛，
+時刻陪伴住你！
+守護你平安、健康、喜樂~ 
+
+"喜樂的心乃是良藥" 箴言 17:22`,
   },
   // 您可以在這裡繼續新增其他朋友（欄位選填，沒填的會自動套用大預設）：
   /*
