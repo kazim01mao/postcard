@@ -22,7 +22,7 @@ export const ALIGNMENT_CONFIG: AlignmentConfig = {
   height: '180px',     // 對齊區域的高度 (可設 px 或 %)
   borderRadius: '50%', // 圓角對界：'50%' 代表圓形/橢圓洞口
   title: '專屬明信片', // 預設首頁大標題
-  subtitle: 'Realtime Transformation', // 預設首頁副標題
+  subtitle: '為你打打氣', // 預設首頁副標題
   buttonText: '查收這份禮物', // 預設主導按鈕文字
   successMessage: '感恩這份奇妙的相遇，獻上我最溫暖的祝福！', // 預設祝賀賀詞
   initialUrl: '/assets/Y/Y1.jpg', // 最初呈現 initial
@@ -93,7 +93,7 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     finalUrl: '/assets/Y/Y3.jpg',
     postcardPhotoUrl: '/assets/Y/Y4.jpg',
     avatarUrl: '/assets/Y/Y0.png',
-    title: '專屬變身魔法',
+    title: '阿浚~ 為你打打氣！',
     successMessage: '您的專屬變身魔法已成功啟動！',
     guideTip: '「請將面部放入框線內，用於代入角色」',
   },
@@ -108,7 +108,7 @@ export const FRIEND_PROFILES: Record<string, Partial<AlignmentConfig>> = {
     finalUrl: '/assets/L/L3.mp4',
     postcardPhotoUrl: '/assets/L/L4.png',
     avatarUrl: '/assets/L/L0.png',
-    title: '專屬變身魔法',
+    title: '雪兒~ 為你打打氣！',
     successMessage: '您的專屬變身魔法已成功啟動！',
     guideTip: '「請將面部放入框線內，用於代入角色」',
   },
