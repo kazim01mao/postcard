@@ -462,13 +462,8 @@ export default function App() {
   // 12. 直接進入體驗（已移除相機授權步驟，保留 Initial → Result → Final 完整流程）
   const startCameraAndMagic = async () => {
     setPermissionError(null);
-    setPhase(AppPhase.LOADING);
-    setAlignmentHint('⌛ 正在準備魔法體驗...');
-
-    // 短暫展示 LOADING 狀態（Initial 層仍可見），然後進入轉場動畫
-    setTimeout(() => {
-      triggerTransitionSecquence();
-    }, 1200);
+    setPhase(AppPhase.ACTIVE);
+    setAlignmentHint('🎯 準備就緒，點擊下方按鈕進入下一步');
   };
 
   // 13. 重設還原
