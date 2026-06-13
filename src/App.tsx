@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw, Play, AlertCircle, Mail, Sparkles, ArrowLeft, X } from 'lucide-react';
+import { Camera, RefreshCw, Play, CameraOff, AlertCircle, Mail, Sparkles, ArrowLeft, X } from 'lucide-react';
 import { AppPhase, BoxDimensions } from './types';
 import { getDynamicAlignmentConfig } from './config';
 import { SVGMaskFallback, ResultFallback, ParticleCanvas } from './components/FallbackRenderer';
@@ -459,10 +459,48 @@ export default function App() {
     }
   }, [phase, mapVideoToContainer, getAlignmentBoxPixels, triggerTransitionSecquence]);
 
-  // 12. 直接進入體驗（已移除相機授權步驟）
+  // 12. 初始化啟動鏡頭 & 開啟靜態代入模式（移除複雜的 MediaPipe 移動追蹤及人臉對齊檢測功能）
   const startCameraAndMagic = async () => {
     setPermissionError(null);
-    triggerTransitionSecquence();
+    setPhase(AppPhase.LOADING);
+    setAlignmentHint('⌛ 正在授權喚醒相機...');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'user',
+          width: { ideal: 1280, min: 320 },
+          height: { ideal: 1280, min: 240 }
+        },
+        audio: false,
+      });
+
+      videoStreamRef.current = stream;
+      if (videoElementRef.current) {
+        videoElementRef.current.srcObject = stream;
+        videoElementRef.current.setAttribute('playsinline', 'true');
+        videoElementRef.current.setAttribute('autoplay', 'true');
+        videoElementRef.current.setAttribute('muted', 'true');
+        
+        const playPromise = videoElementRef.current.play();
+        if (playPromise !== undefined) {
+          try {
+            await playPromise;
+          } catch (err: any) {
+            console.warn('相機流播放被中斷或被瀏覽器阻止:', err);
+          }
+        }
+      }
+
+      setPhase(AppPhase.ACTIVE);
+      setAlignmentHint('🎯 請將您的臉龐置於框線中心');
+
+    } catch (err: any) {
+      console.error('開啟相機失敗:', err);
+      setPhase(AppPhase.ACTIVE);
+      setPermissionError(err.message || '相機調用受限（若處於沙盒預覽中，請開新視窗授權）');
+      setAlignmentHint('⚠️ 已為您開通「靜態對位模式」，直接點擊下方藍色膠囊即可進入下一步！');
+    }
   };
 
   // 13. 重設還原
@@ -495,7 +533,15 @@ export default function App() {
 
   // 14. 返回上一級 (引導上一步)
   const goBackPreviousLevel = () => {
-    resetMagic();
+    if (phase === AppPhase.ACTIVE) {
+      // 拍攝/對齊階段，上一級即為首頁
+      resetMagic();
+    } else if (phase === AppPhase.STAGE2 || phase === AppPhase.STAGE3) {
+      // 影片播放/客製結果階段，返回上一級為再次開啟對齊/相機掃描
+      startCameraAndMagic();
+    } else {
+      resetMagic();
+    }
   };
 
   useEffect(() => {
